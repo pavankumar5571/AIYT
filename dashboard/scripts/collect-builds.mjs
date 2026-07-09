@@ -130,22 +130,32 @@ const builds = ids.map((id) => {
   };
 });
 
-builds.sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0));
+// Merge with previously-committed builds so history survives ephemeral cloud runs:
+// a GitHub runner only has the CURRENT story's files in output/, so we upsert the
+// freshly-computed entries onto whatever builds.json already holds.
+let merged = builds;
+try {
+  const existing = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'builds.json'), 'utf8'));
+  const byId = new Map((existing.builds || []).map((b) => [b.id, b]));
+  for (const b of builds) byId.set(b.id, b);
+  merged = [...byId.values()];
+} catch {}
+merged.sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0));
 
 const out = {
   generated_at: new Date().toISOString(),
   pricing: PRICING,
   totals: {
-    builds: builds.length,
-    uploaded: builds.filter((b) => b.upload.uploaded).length,
-    videos: builds.filter((b) => b.video.has_final).length,
-    total_minutes: Math.round(builds.reduce((s, b) => s + ((b.video.duration_seconds || 0) / 60), 0) * 10) / 10,
+    builds: merged.length,
+    uploaded: merged.filter((b) => b.upload.uploaded).length,
+    videos: merged.filter((b) => b.video.has_final).length,
+    total_minutes: Math.round(merged.reduce((s, b) => s + ((b.video.duration_seconds || 0) / 60), 0) * 10) / 10,
     actual_usd: 0,
-    equivalent_usd: usd(builds.reduce((s, b) => s + b.cost.equivalent_usd, 0)),
+    equivalent_usd: usd(merged.reduce((s, b) => s + b.cost.equivalent_usd, 0)),
   },
-  builds,
+  builds: merged,
 };
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 fs.writeFileSync(path.join(DATA_DIR, 'builds.json'), JSON.stringify(out, null, 2));
-console.log(`Wrote data/builds.json: ${builds.length} builds, ${out.totals.uploaded} uploaded, ${out.totals.videos} videos, equiv $${out.totals.equivalent_usd}`);
+console.log(`Wrote data/builds.json: ${out.totals.builds} builds, ${out.totals.uploaded} uploaded, ${out.totals.videos} videos, equiv $${out.totals.equivalent_usd}`);

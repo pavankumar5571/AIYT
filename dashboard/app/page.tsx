@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getBuildsFile, money } from '@/lib/builds';
+import { getBuildsFile, getStatus, timeAgo, money } from '@/lib/builds';
 import type { BuildStatus } from '@/lib/types';
 
 const statusLabel: Record<BuildStatus, string> = {
@@ -10,6 +10,7 @@ const statusLabel: Record<BuildStatus, string> = {
 
 export default function Home() {
   const { totals, builds, generated_at } = getBuildsFile();
+  const run = getStatus();
 
   return (
     <main>
@@ -21,10 +22,17 @@ export default function Home() {
             <p>Progress &amp; cost of every AI-generated story video</p>
           </div>
         </div>
-        <div className="stamp">
-          updated
-          <br />
-          {new Date(generated_at).toLocaleString()}
+        <div className="run-status">
+          {run.run_url ? (
+            <a href={run.run_url} target="_blank" rel="noreferrer" className={`runstat ${run.status}`}>
+              <span className="dot" /> daily run {run.status}
+            </a>
+          ) : (
+            <span className={`runstat ${run.status}`}>
+              <span className="dot" /> daily run {run.status}
+            </span>
+          )}
+          <div className="stamp">{run.last_run_at ? `${timeAgo(run.last_run_at)} · synced` : 'not run yet'}</div>
         </div>
       </header>
 

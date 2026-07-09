@@ -46,6 +46,14 @@ export interface Build {
   cost: { actual_usd: number; equivalent_usd: number; breakdown: CostLine[] };
 }
 
+export interface RunStatus {
+  last_run_at: string | null;
+  status: 'success' | 'failed' | 'never';
+  story_id: string | null;
+  video_url: string | null;
+  run_url: string | null;
+}
+
 export interface BuildsFile {
   generated_at: string;
   pricing: Record<string, number | string>;
