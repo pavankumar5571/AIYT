@@ -1,7 +1,7 @@
 {
-  "last_run_at": "2026-07-09T11:44:43Z",
-  "status": "success",
-  "story_id": "2026-07-09_the-mystery-of-the-missing-sparkle",
-  "video_url": "https://youtu.be/ABMlGw8Bj6U",
-  "run_url": null
+  "last_run_at": "2026-07-09T19:38:07.725Z",
+  "status": "failed",
+  "story_id": null,
+  "video_url": null,
+  "run_url": "https://github.com/pavankumar5571/AIYT/actions/runs/29044810601"
 }
