@@ -1,0 +1,38 @@
+# ===== Secrets - NEVER commit =====
+.env
+.secrets/
+*_creds.json
+*_creds_enc.json
+_secrets.env
+*.local.txt
+
+# ===== Generated media (huge; regenerate, don't version) =====
+output/
+assets/
+*.mp4
+*.wav
+*.mp3
+*.jpg
+*.jpeg
+*.png
+
+# ===== Backups =====
+backups/
+
+# ===== Runtime logs (keep ONLY the dedupe state) =====
+logs/*
+!logs/.gitkeep
+!logs/story-log.json
+
+# ===== Dashboard (its own repo + Vercel) =====
+dashboard/
+
+# ===== Node / build junk =====
+node_modules/
+.next/
+*.tsbuildinfo
+
+# ===== OS noise =====
+Thumbs.db
+desktop.ini
+.DS_Store

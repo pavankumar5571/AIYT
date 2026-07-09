@@ -1,0 +1,134 @@
+services:
+  postgres:
+    # Pinned to major version 16 (matches the data already in the volume).
+    # Never bump the major version without a pg_dump backup first.
+    image: postgres:16
+    container_name: aiyt_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      # 127.0.0.1 binding: reachable from THIS machine only (for pgAdmin/psql
+      # debugging), invisible to the rest of your network. n8n itself talks to
+      # postgres over the internal Docker network and does not use this port.
+      - "127.0.0.1:5432:5432"
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+  n8n:
+    # Official hardened n8n image (no package manager). FFmpeg lives in the
+    # separate 'ffmpeg' worker service below, not here.
+    image: docker.n8n.io/n8nio/n8n:2.29.7
+    container_name: aiyt_n8n
+    restart: unless-stopped
+    ports:
+      # n8n UI stays on localhost only as well - this project runs on one machine.
+      - "127.0.0.1:5678:5678"
+    environment:
+      # --- core ---
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - NODE_ENV=production
+      - GENERIC_TIMEZONE=${GENERIC_TIMEZONE}
+      - TZ=${GENERIC_TIMEZONE}
+      # --- security ---
+      # The key that encrypts ALL saved credentials (OpenAI, YouTube, ...).
+      # Extracted from the volume into .env so backups can restore credentials.
+      # NEVER change this value once credentials exist.
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      # Allow file nodes to read/write the project bind mounts (n8n sandboxes
+      # filesystem access by default). /data is where all our Windows folders live.
+      - N8N_RESTRICT_FILE_ACCESS_TO=/data
+      # --- database ---
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=${POSTGRES_DB}
+      - DB_POSTGRESDB_USER=${POSTGRES_USER}
+      - DB_POSTGRESDB_PASSWORD=${POSTGRES_PASSWORD}
+      # --- housekeeping (daily video runs would bloat the DB otherwise) ---
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=336            # keep 14 days of run history
+      - EXECUTIONS_DATA_PRUNE_MAX_COUNT=1000   # and at most 1000 runs
+      # Store binary data (images/audio/video passing through nodes) on disk,
+      # not inside the Postgres database.
+      - N8N_DEFAULT_BINARY_DATA_MODE=filesystem
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ../output:/data/output
+      - ../assets:/data/assets
+      - ../prompts:/data/prompts
+      - ../workflows:/data/workflows
+      - ../logs:/data/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 2g
+
+  # ---- FFmpeg render worker (Module 10) ----
+  # A normal Alpine image with ffmpeg + fonts + jq + bash. Shares the same
+  # project folders. Runs a watch loop that renders any job dropped by n8n into
+  # output/_render_jobs/. Decoupled from n8n: no Docker socket, no shared image.
+  ffmpeg:
+    build:
+      context: .
+      dockerfile: Dockerfile.ffmpeg
+    image: aiyt-ffmpeg:1
+    container_name: aiyt_ffmpeg
+    restart: unless-stopped
+    volumes:
+      - ../output:/data/output
+      - ../assets:/data/assets
+      - ../scripts:/data/scripts
+      - ../logs:/data/logs
+    command: ["bash", "/data/scripts/watch-render.sh"]
+    deploy:
+      resources:
+        limits:
+          # Rendering (zoompan + x264) is CPU/memory-hungry.
+          memory: 4g
+
+  # ---- edge-tts narration worker (Module 08) ----
+  # python:3-slim + ffmpeg + edge-tts. Free Microsoft voices, no API key, no
+  # quota - replaces the rate-limited Gemini TTS. Watches output/_tts_jobs/ for
+  # <story-id>.job files dropped by n8n, writes per-scene WAVs + audio manifest.
+  tts:
+    build:
+      context: .
+      dockerfile: Dockerfile.tts
+    image: aiyt-tts:1
+    container_name: aiyt_tts
+    restart: unless-stopped
+    volumes:
+      - ../output:/data/output
+      - ../prompts:/data/prompts
+      - ../scripts:/data/scripts
+      - ../logs:/data/logs
+    command: ["python", "/data/scripts/narrate_worker.py"]
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+
+volumes:
+  postgres_data:
+    name: aiyt_postgres_data
+  n8n_data:
+    name: aiyt_n8n_data

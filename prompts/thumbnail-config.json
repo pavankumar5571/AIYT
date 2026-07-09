@@ -1,0 +1,6 @@
+{
+  "_comment": "Thumbnail settings. Nano Banana image 16:9 with the characters + a short title. Paid (image gen). include_title_text: true asks the model to render the title on the image (AI text can be imperfect; set false for a clean text-free thumbnail).",
+  "image_model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "include_title_text": true
+}

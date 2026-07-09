@@ -1,0 +1,8 @@
+{
+  "_comment": "YouTube SEO metadata settings. Uses gemini-2.5-flash (stable). Content is made-for-kids (COPPA) - keep everything family-friendly.",
+  "seo_model": "gemini-2.5-flash",
+  "channel": "Boopaloo Kids",
+  "audience_age": "3-8",
+  "tag_count": 16,
+  "hashtag_count": 5
+}

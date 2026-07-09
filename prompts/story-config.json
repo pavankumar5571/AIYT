@@ -1,0 +1,22 @@
+{
+  "channel": "Boopaloo Kids",
+  "audience_age": "4-12",
+  "language": "English",
+  "target_words": 1450,
+  "avoid_recent": 20,
+  "text_model": "gemini-2.5-flash",
+  "themes": [
+    "a small animal overcoming a big fear",
+    "an unlikely friendship between two very different animals",
+    "a magical object found in an ordinary place",
+    "helping someone who seems scary but is actually kind",
+    "a little hero saving the day with kindness instead of strength",
+    "learning to share something precious",
+    "a journey to find something lost",
+    "trying something new for the very first time",
+    "teamwork making an impossible task possible",
+    "telling the truth even when it is hard",
+    "patience and waiting for something wonderful",
+    "a bedtime adventure under the stars"
+  ]
+}

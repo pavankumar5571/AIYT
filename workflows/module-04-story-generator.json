@@ -1,0 +1,526 @@
+{
+  "id": "aiytM4StoryGen001",
+  "name": "Module 04 - Story Generator",
+  "active": false,
+  "settings": {},
+  "nodes": [
+    {
+      "id": "trigger1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "readcfg1",
+      "name": "Read Config",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/data/prompts/story-config.json",
+        "options": {}
+      }
+    },
+    {
+      "id": "extcfg1",
+      "name": "Extract Config",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        400,
+        0
+      ],
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      }
+    },
+    {
+      "id": "readlog1",
+      "name": "Read Story Log",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/data/logs/story-log.json",
+        "options": {}
+      }
+    },
+    {
+      "id": "extlog1",
+      "name": "Extract Story Log",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        800,
+        0
+      ],
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      }
+    },
+    {
+      "id": "readsys1",
+      "name": "Read System Prompt",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/data/prompts/story-system.md",
+        "options": {}
+      }
+    },
+    {
+      "id": "extsys1",
+      "name": "Extract System Prompt",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      }
+    },
+    {
+      "id": "readtpl1",
+      "name": "Read User Template",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/data/prompts/story-user-template.md",
+        "options": {}
+      }
+    },
+    {
+      "id": "exttpl1",
+      "name": "Extract User Template",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        0
+      ],
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      }
+    },
+    {
+      "id": "build1",
+      "name": "Build Gemini Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const cfgRaw = $('Extract Config').first().json;\nconst config = cfgRaw.data ?? cfgRaw;\nconst logRaw = $('Extract Story Log').first().json;\nconst log = logRaw.data ?? logRaw;\nconst systemPrompt = $('Extract System Prompt').first().json.data;\nconst template = $('Extract User Template').first().json.data;\n\nconst used = log.used || [];\nconst recent = used.slice(-config.avoid_recent);\nconst avoidList = recent.length\n  ? recent.map(u => `- \"${u.title}\" (theme: ${u.theme})`).join('\\n')\n  : '- (none yet - this is the first story)';\n\nconst theme = config.themes[Math.floor(Math.random() * config.themes.length)];\n\nconst userPrompt = template\n  .replace(/{{THEME}}/g, theme)\n  .replace(/{{TARGET_WORDS}}/g, String(config.target_words))\n  .replace(/{{AUDIENCE_AGE}}/g, config.audience_age)\n  .replace(/{{AVOID_LIST}}/g, avoidList);\n\nconst responseSchema = {\n  type: 'OBJECT',\n  properties: {\n    title: { type: 'STRING' },\n    logline: { type: 'STRING' },\n    theme: { type: 'STRING' },\n    moral: { type: 'STRING' },\n    characters: {\n      type: 'ARRAY',\n      items: {\n        type: 'OBJECT',\n        properties: {\n          name: { type: 'STRING' },\n          description: { type: 'STRING' },\n          visual_description: { type: 'STRING' }\n        },\n        required: ['name', 'description', 'visual_description']\n      }\n    },\n    story_text: { type: 'STRING' }\n  },\n  required: ['title', 'logline', 'theme', 'moral', 'characters', 'story_text']\n};\n\nconst body = {\n  systemInstruction: { parts: [{ text: systemPrompt }] },\n  contents: [{ role: 'user', parts: [{ text: userPrompt }] }],\n  generationConfig: {\n    responseMimeType: 'application/json',\n    responseSchema,\n    temperature: 1.0,\n    maxOutputTokens: 8192\n  }\n};\n\nreturn [{ json: { theme, model: config.text_model, body } }];"
+      }
+    },
+    {
+      "id": "gemini1",
+      "name": "Gemini Generate Story",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2000,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json.model }}:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "aiytGeminiCred001",
+          "name": "Gemini - AIYT"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "parse1",
+      "name": "Parse and Validate",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nconst cfgRaw = $('Extract Config').first().json;\nconst cfg = cfgRaw.data ?? cfgRaw;\nconst logRaw = $('Extract Story Log').first().json;\nconst log = logRaw.data ?? logRaw;\nconst req = $('Build Gemini Request').first().json;\n\nconst text = (resp.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');\nif (!text) throw new Error('Gemini returned no text. Raw: ' + JSON.stringify(resp).slice(0, 300));\n\nlet story;\ntry {\n  story = JSON.parse(text);\n} catch (e) {\n  throw new Error('Gemini did not return valid JSON. First 200 chars: ' + text.slice(0, 200));\n}\n\nfor (const f of ['title', 'logline', 'theme', 'moral', 'characters', 'story_text']) {\n  if (!story[f] || (Array.isArray(story[f]) && story[f].length === 0)) {\n    throw new Error('Story is missing required field: ' + f);\n  }\n}\n\nconst wordCount = story.story_text.trim().split(/\\s+/).length;\nif (wordCount < cfg.target_words * 0.6) {\n  throw new Error(`Story too short: ${wordCount} words (target ${cfg.target_words})`);\n}\n\nconst used = log.used || [];\nconst norm = s => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();\nif (used.some(u => norm(u.title) === norm(story.title))) {\n  throw new Error('Duplicate story title generated: ' + story.title);\n}\n\nconst now = new Date();\nconst date = now.toISOString().slice(0, 10);\nconst slug = norm(story.title).replace(/\\s+/g, '-').slice(0, 60);\nconst id = `${date}_${slug}`;\n\nconst storyRecord = {\n  id,\n  date,\n  generated_at: now.toISOString(),\n  model: req.model,\n  requested_theme: req.theme,\n  word_count: wordCount,\n  status: 'story_generated',\n  ...story\n};\n\nconst updatedLog = {\n  used: [...used, { id, date, title: story.title, theme: story.theme }]\n};\n\nreturn [{ json: {\n  story: storyRecord,\n  updatedLog,\n  file_path: `/data/output/stories/${id}.json`,\n  title: story.title,\n  word_count: wordCount\n} }];"
+      }
+    },
+    {
+      "id": "storyjson1",
+      "name": "Story Object",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: $input.first().json.story }];"
+      }
+    },
+    {
+      "id": "storyfile1",
+      "name": "Story to File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2600,
+        0
+      ],
+      "parameters": {
+        "operation": "toJson",
+        "mode": "each",
+        "options": {
+          "format": true
+        }
+      }
+    },
+    {
+      "id": "writestory1",
+      "name": "Write Story File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2800,
+        0
+      ],
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Parse and Validate').item.json.file_path }}",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "logjson1",
+      "name": "Log Object",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3000,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: $('Parse and Validate').first().json.updatedLog }];"
+      }
+    },
+    {
+      "id": "logfile1",
+      "name": "Log to File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        3200,
+        0
+      ],
+      "parameters": {
+        "operation": "toJson",
+        "mode": "each",
+        "options": {
+          "format": true
+        }
+      }
+    },
+    {
+      "id": "writelog1",
+      "name": "Write Story Log",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        3400,
+        0
+      ],
+      "parameters": {
+        "operation": "write",
+        "fileName": "/data/logs/story-log.json",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "summary1",
+      "name": "Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3600,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "title",
+              "type": "string",
+              "value": "={{ $('Parse and Validate').item.json.title }}"
+            },
+            {
+              "id": "s2",
+              "name": "word_count",
+              "type": "number",
+              "value": "={{ $('Parse and Validate').item.json.word_count }}"
+            },
+            {
+              "id": "s3",
+              "name": "saved_to",
+              "type": "string",
+              "value": "={{ $('Parse and Validate').item.json.file_path }}"
+            },
+            {
+              "id": "s4",
+              "name": "characters",
+              "type": "string",
+              "value": "={{ $('Parse and Validate').item.json.story.characters.map(c => c.name).join(', ') }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Config": {
+      "main": [
+        [
+          {
+            "node": "Extract Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Config": {
+      "main": [
+        [
+          {
+            "node": "Read Story Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Story Log": {
+      "main": [
+        [
+          {
+            "node": "Extract Story Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Story Log": {
+      "main": [
+        [
+          {
+            "node": "Read System Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read System Prompt": {
+      "main": [
+        [
+          {
+            "node": "Extract System Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract System Prompt": {
+      "main": [
+        [
+          {
+            "node": "Read User Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read User Template": {
+      "main": [
+        [
+          {
+            "node": "Extract User Template",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract User Template": {
+      "main": [
+        [
+          {
+            "node": "Build Gemini Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Gemini Request": {
+      "main": [
+        [
+          {
+            "node": "Gemini Generate Story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Generate Story": {
+      "main": [
+        [
+          {
+            "node": "Parse and Validate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse and Validate": {
+      "main": [
+        [
+          {
+            "node": "Story Object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Story Object": {
+      "main": [
+        [
+          {
+            "node": "Story to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Story to File": {
+      "main": [
+        [
+          {
+            "node": "Write Story File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Story File": {
+      "main": [
+        [
+          {
+            "node": "Log Object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Object": {
+      "main": [
+        [
+          {
+            "node": "Log to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to File": {
+      "main": [
+        [
+          {
+            "node": "Write Story Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Story Log": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

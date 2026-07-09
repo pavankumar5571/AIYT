@@ -1,0 +1,168 @@
+{
+  "id": "aiytM11Thumb0001",
+  "name": "Module 11 - Thumbnail",
+  "active": false,
+  "settings": {},
+  "nodes": [
+    {
+      "id": "trigger1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "readcfg1",
+      "name": "Read Thumb Config",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [200, 0],
+      "parameters": { "operation": "read", "fileSelector": "/data/prompts/thumbnail-config.json", "options": {} }
+    },
+    {
+      "id": "extcfg1",
+      "name": "Extract Thumb Config",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [400, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "readlog1",
+      "name": "Read Story Log",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [600, 0],
+      "parameters": { "operation": "read", "fileSelector": "/data/logs/story-log.json", "options": {} }
+    },
+    {
+      "id": "extlog1",
+      "name": "Extract Story Log",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [800, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "pick1",
+      "name": "Pick Latest Story",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 0],
+      "parameters": {
+        "jsCode": "const raw = $('Extract Story Log').first().json;\nconst log = raw.data ?? raw;\nconst used = log.used || [];\nif (!used.length) throw new Error('No stories. Run Module 4 first.');\nconst id = used[used.length - 1].id;\nreturn [{ json: { story_id: id, story_path: `/data/output/stories/${id}.json` } }];"
+      }
+    },
+    {
+      "id": "readstory1",
+      "name": "Read Story File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [1200, 0],
+      "parameters": { "operation": "read", "fileSelector": "={{ $('Pick Latest Story').item.json.story_path }}", "options": {} }
+    },
+    {
+      "id": "extstory1",
+      "name": "Extract Story",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [1400, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "build1",
+      "name": "Build Thumb Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1600, 0],
+      "parameters": {
+        "jsCode": "const cfgRaw = $('Extract Thumb Config').first().json;\nconst cfg = cfgRaw.data ?? cfgRaw;\nconst storyRaw = $('Extract Story').first().json;\nconst story = storyRaw.data ?? storyRaw;\n\nconst charBlock = (story.characters || []).map(c => `${c.name} (${c.visual_description})`).join('; ');\n// Short punchy title for the thumbnail (character names)\nconst names = (story.characters || []).map(c => c.name).join(' & ');\nconst thumbTitle = names || story.title;\n\nlet prompt = `Vibrant, eye-catching YouTube thumbnail for a children's animated story, 16:9. Bright, high-contrast, soft painterly children's storybook style with bold cinematic lighting. Big, adorable, expressive characters filling the frame in a cheerful, dynamic pose with happy faces: ${charBlock}. Warm inviting background, appealing to young kids.`;\nif (cfg.include_title_text) {\n  prompt += ` Add large, bold, playful rounded title text reading \\\"${thumbTitle}\\\" with a thick outline, clearly legible.`;\n} else {\n  prompt += ` No text.`;\n}\n\nconst body = {\n  contents: [{ parts: [{ text: prompt }] }],\n  generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: cfg.aspect_ratio || '16:9' } }\n};\nreturn [{ json: { model: cfg.image_model, story_id: story.id, out_path: `/data/output/thumbnails/${story.id}.jpg`, thumb_file: `${story.id}.jpg`, body } }];"
+      }
+    },
+    {
+      "id": "genimg1",
+      "name": "Generate Thumbnail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1800, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json.model }}:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": { "timeout": 120000 }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 4000,
+      "credentials": { "googlePalmApi": { "id": "aiytGeminiCred001", "name": "Gemini - AIYT" } }
+    },
+    {
+      "id": "extb64_1",
+      "name": "Extract Image B64",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 0],
+      "parameters": {
+        "jsCode": "const r = $input.first().json;\nconst meta = $('Build Thumb Request').first().json;\nconst parts = r.candidates?.[0]?.content?.parts || [];\nconst part = parts.find(p => p.inlineData || p.inline_data);\nconst inline = part && (part.inlineData || part.inline_data);\nif (!inline) throw new Error('No thumbnail image returned. Response: ' + JSON.stringify(r).slice(0, 200));\nreturn [{ json: { story_id: meta.story_id, out_path: meta.out_path, thumb_file: meta.thumb_file, imageB64: inline.data } }];"
+      }
+    },
+    {
+      "id": "tobin1",
+      "name": "Base64 to Binary",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [2200, 0],
+      "parameters": { "operation": "toBinary", "sourceProperty": "imageB64", "options": { "fileName": "thumbnail.jpg", "mimeType": "image/jpeg" } }
+    },
+    {
+      "id": "writethumb1",
+      "name": "Write Thumbnail",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [2400, 0],
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Extract Image B64').item.json.out_path }}",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "summary1",
+      "name": "Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2600, 0],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "s1", "name": "story_id", "type": "string", "value": "={{ $('Extract Image B64').item.json.story_id }}" },
+            { "id": "s2", "name": "thumbnail", "type": "string", "value": "={{ $('Extract Image B64').item.json.out_path }}" }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[{ "node": "Read Thumb Config", "type": "main", "index": 0 }]] },
+    "Read Thumb Config": { "main": [[{ "node": "Extract Thumb Config", "type": "main", "index": 0 }]] },
+    "Extract Thumb Config": { "main": [[{ "node": "Read Story Log", "type": "main", "index": 0 }]] },
+    "Read Story Log": { "main": [[{ "node": "Extract Story Log", "type": "main", "index": 0 }]] },
+    "Extract Story Log": { "main": [[{ "node": "Pick Latest Story", "type": "main", "index": 0 }]] },
+    "Pick Latest Story": { "main": [[{ "node": "Read Story File", "type": "main", "index": 0 }]] },
+    "Read Story File": { "main": [[{ "node": "Extract Story", "type": "main", "index": 0 }]] },
+    "Extract Story": { "main": [[{ "node": "Build Thumb Request", "type": "main", "index": 0 }]] },
+    "Build Thumb Request": { "main": [[{ "node": "Generate Thumbnail", "type": "main", "index": 0 }]] },
+    "Generate Thumbnail": { "main": [[{ "node": "Extract Image B64", "type": "main", "index": 0 }]] },
+    "Extract Image B64": { "main": [[{ "node": "Base64 to Binary", "type": "main", "index": 0 }]] },
+    "Base64 to Binary": { "main": [[{ "node": "Write Thumbnail", "type": "main", "index": 0 }]] },
+    "Write Thumbnail": { "main": [[{ "node": "Summary", "type": "main", "index": 0 }]] }
+  }
+}

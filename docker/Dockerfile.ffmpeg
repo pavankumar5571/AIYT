@@ -1,0 +1,11 @@
+# FFmpeg render worker for Module 10.
+# Plain Alpine (has a real package manager) + everything the renderer needs:
+#   ffmpeg      - rendering
+#   fontconfig  - libass finds fonts for subtitle burn-in
+#   ttf-dejavu  - the DejaVu Sans font used by our .ass subtitles
+#   jq + bash   - the render/watch scripts read JSON and loop
+#   coreutils   - reliable printf/sleep/etc.
+FROM alpine:3.24
+RUN apk add --no-cache ffmpeg fontconfig ttf-dejavu jq bash coreutils \
+ && fc-cache -f
+WORKDIR /data

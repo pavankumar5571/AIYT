@@ -1,0 +1,110 @@
+{
+  "id": "aiytM3SmokeTest01",
+  "name": "Module 03 - Credential Smoke Test",
+  "active": false,
+  "settings": {},
+  "nodes": [
+    {
+      "id": "trigger1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "youtube1",
+      "name": "YouTube Test",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [220, 0],
+      "parameters": {
+        "method": "GET",
+        "url": "https://www.googleapis.com/youtube/v3/channels",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "part", "value": "snippet,statistics" },
+            { "name": "mine", "value": "true" }
+          ]
+        },
+        "options": {}
+      },
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "aiytYouTubeCred01",
+          "name": "YouTube - AIYT"
+        }
+      }
+    },
+    {
+      "id": "gemini1",
+      "name": "Gemini Test",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [440, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"contents\": [{\"parts\": [{\"text\": \"Reply with exactly: GEMINI-OK\"}]}]\n}",
+        "options": {}
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "aiytGeminiCred001",
+          "name": "Gemini - AIYT"
+        }
+      }
+    },
+    {
+      "id": "summary1",
+      "name": "Summarize Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [660, 0],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "gemini_reply",
+              "type": "string",
+              "value": "={{ $('Gemini Test').item.json.candidates[0].content.parts[0].text }}"
+            },
+            {
+              "id": "a2",
+              "name": "youtube_channel",
+              "type": "string",
+              "value": "={{ $('YouTube Test').item.json.items[0].snippet.title }}"
+            },
+            {
+              "id": "a3",
+              "name": "youtube_subscribers",
+              "type": "string",
+              "value": "={{ $('YouTube Test').item.json.items[0].statistics.subscriberCount }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [[{ "node": "YouTube Test", "type": "main", "index": 0 }]]
+    },
+    "YouTube Test": {
+      "main": [[{ "node": "Gemini Test", "type": "main", "index": 0 }]]
+    },
+    "Gemini Test": {
+      "main": [[{ "node": "Summarize Result", "type": "main", "index": 0 }]]
+    }
+  }
+}

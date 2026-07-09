@@ -1,0 +1,141 @@
+{
+  "id": "aiytM10bAssemble1",
+  "name": "Module 10b - Assemble Video",
+  "active": false,
+  "settings": {},
+  "nodes": [
+    {
+      "id": "trigger1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "readlog1",
+      "name": "Read Story Log",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [200, 0],
+      "parameters": { "operation": "read", "fileSelector": "/data/logs/story-log.json", "options": {} }
+    },
+    {
+      "id": "extlog1",
+      "name": "Extract Story Log",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [400, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "pick1",
+      "name": "Pick Latest Story",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [600, 0],
+      "parameters": {
+        "jsCode": "const raw = $('Extract Story Log').first().json;\nconst log = raw.data ?? raw;\nconst used = log.used || [];\nif (!used.length) throw new Error('No stories. Run Module 4 first.');\nconst id = used[used.length - 1].id;\nreturn [{ json: {\n  story_id: id,\n  job_path: `/data/output/_render_jobs/${id}.job`,\n  result_path: `/data/output/_render_jobs/${id}.result`,\n  video_path: `/data/output/videos/${id}.mp4`,\n  jobB64: Buffer.from(id, 'utf8').toString('base64')\n} }];"
+      }
+    },
+    {
+      "id": "jobbin1",
+      "name": "Job to Binary",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [800, 0],
+      "parameters": { "operation": "toBinary", "sourceProperty": "jobB64", "options": { "fileName": "job.txt" } }
+    },
+    {
+      "id": "writejob1",
+      "name": "Write Job",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [1000, 0],
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Pick Latest Story').item.json.job_path }}",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "initpoll1",
+      "name": "Init Poll",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 0],
+      "parameters": { "jsCode": "return [{ json: { attempts: 0 } }];" }
+    },
+    {
+      "id": "wait1",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1400, 0],
+      "parameters": { "amount": 10, "unit": "seconds" }
+    },
+    {
+      "id": "readresult1",
+      "name": "Read Result",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [1600, 0],
+      "onError": "continueErrorOutput",
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "={{ $('Pick Latest Story').item.json.result_path }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "bump1",
+      "name": "Bump Counter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1600, 200],
+      "parameters": {
+        "jsCode": "const a = ($json.attempts || 0) + 1;\nif (a > 30) throw new Error('Assembly timed out (~5 min). Check logs/render.log and that output/flow_in/<story-id>.mp4 exists.');\nreturn [{ json: { attempts: a } }];"
+      }
+    },
+    {
+      "id": "extresult1",
+      "name": "Extract Result",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [1800, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "summary1",
+      "name": "Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2000, 0],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "s1", "name": "status", "type": "string", "value": "={{ ($json.data ?? $json).status }}" },
+            { "id": "s2", "name": "video", "type": "string", "value": "={{ ($json.data ?? $json).video }}" },
+            { "id": "s3", "name": "story_id", "type": "string", "value": "={{ $('Pick Latest Story').item.json.story_id }}" }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[{ "node": "Read Story Log", "type": "main", "index": 0 }]] },
+    "Read Story Log": { "main": [[{ "node": "Extract Story Log", "type": "main", "index": 0 }]] },
+    "Extract Story Log": { "main": [[{ "node": "Pick Latest Story", "type": "main", "index": 0 }]] },
+    "Pick Latest Story": { "main": [[{ "node": "Job to Binary", "type": "main", "index": 0 }]] },
+    "Job to Binary": { "main": [[{ "node": "Write Job", "type": "main", "index": 0 }]] },
+    "Write Job": { "main": [[{ "node": "Init Poll", "type": "main", "index": 0 }]] },
+    "Init Poll": { "main": [[{ "node": "Wait", "type": "main", "index": 0 }]] },
+    "Wait": { "main": [[{ "node": "Read Result", "type": "main", "index": 0 }]] },
+    "Read Result": { "main": [[{ "node": "Extract Result", "type": "main", "index": 0 }], [{ "node": "Bump Counter", "type": "main", "index": 0 }]] },
+    "Bump Counter": { "main": [[{ "node": "Wait", "type": "main", "index": 0 }]] },
+    "Extract Result": { "main": [[{ "node": "Summary", "type": "main", "index": 0 }]] }
+  }
+}

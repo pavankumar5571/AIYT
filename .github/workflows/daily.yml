@@ -1,0 +1,77 @@
+name: Daily AI-YouTube video
+
+# Runs the ENTIRE existing Docker stack (n8n + postgres + edge-tts + ffmpeg)
+# ephemerally on a GitHub-hosted runner, generates one story video, and uploads
+# it PRIVATE. No servers to maintain. State (story-log for de-dup) is committed
+# back to the repo each run.
+
+on:
+  workflow_dispatch: {}          # manual "Run workflow" button (use this to test)
+  schedule:
+    - cron: "0 7 * * *"          # 07:00 UTC daily
+
+permissions:
+  contents: write                # to commit story-log.json back
+
+concurrency:
+  group: daily-video
+  cancel-in-progress: false
+
+jobs:
+  generate-and-upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare env + output dirs
+        run: |
+          mkdir -p \
+            output/stories output/scenes output/flow output/flow_in output/images \
+            output/audio output/subtitles output/thumbnails output/videos output/seo \
+            output/_tts_jobs output/_render_jobs logs assets/music
+          cat > .env <<EOF
+          POSTGRES_USER=n8n
+          POSTGRES_PASSWORD=ci_$(date +%s)
+          POSTGRES_DB=n8n
+          N8N_HOST=localhost
+          GENERIC_TIMEZONE=UTC
+          N8N_ENCRYPTION_KEY=${{ secrets.N8N_ENCRYPTION_KEY }}
+          EOF
+
+      - name: Build + start stack
+        run: docker compose -f docker/docker-compose.yml --env-file .env up -d --build
+
+      - name: Wait for n8n to be ready
+        run: |
+          for i in $(seq 1 90); do
+            if docker exec aiyt_n8n n8n list:workflow >/dev/null 2>&1; then echo "n8n ready"; exit 0; fi
+            sleep 3
+          done
+          echo "n8n did not become ready"; docker compose -f docker/docker-compose.yml logs --tail=120; exit 1
+
+      - name: Import workflows + credentials
+        env:
+          CREDS: ${{ secrets.N8N_CREDENTIALS_JSON }}
+        run: |
+          printf '%s' "$CREDS" > credentials.json
+          docker cp credentials.json aiyt_n8n:/tmp/credentials.json
+          rm -f credentials.json
+          docker exec aiyt_n8n sh -c 'find /data/workflows -name "*.json" -exec n8n import:workflow --input={} \;'
+          docker exec aiyt_n8n n8n import:credentials --input=/tmp/credentials.json
+
+      - name: Generate + upload (private)
+        run: bash scripts/run-daily.sh
+
+      - name: Commit story-log back (de-dup state)
+        if: always()
+        run: |
+          git config user.name "aiyt-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add logs/story-log.json || true
+          git commit -m "daily run: $(date -u +%F)" || echo "no state change"
+          git push || echo "nothing to push"
+
+      - name: Dump logs on failure
+        if: failure()
+        run: docker compose -f docker/docker-compose.yml logs --tail=200

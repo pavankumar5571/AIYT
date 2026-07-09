@@ -1,0 +1,25 @@
+﻿{
+    "_comment":  "Persistent character memory for Boopaloo Kids. recurring_characters = manually pinned characters (e.g. a channel mascot) that must look IDENTICAL in every episode; they always override a story\u0027s version. registry = auto-maintained by Module 6: it remembers every character ever generated so a re-used name keeps its original look across episodes. To make a recurring character actually APPEAR in new stories, also add its name to the Module 4 story prompt.",
+    "art_style_reference":  "Cinematic children\u0027s storybook illustration, soft painterly digital art, warm golden lighting. Keep this in sync with prompts/scene-config.json -\u003e image_style so every episode shares one look.",
+    "recurring_characters":  {
+
+                             },
+    "registry":  {
+                     "mimi":  {
+                                  "name":  "Mimi",
+                                  "description":  "A tiny, energetic desert jerboa who loves to zoom and hop.",
+                                  "visual_description":  "A palm-sized, creamy-yellow jerboa with giant, round black eyes, long tufted ears like bunny ears, extremely long springy back legs, and a tiny pink nose. She wears a little cherry-red backpack made of a flower petal.",
+                                  "first_seen":  "2026-07-08_mimi-s-slow-ride-to-the-sweet-plums",
+                                  "last_seen":  "2026-07-08_mimi-s-slow-ride-to-the-sweet-plums",
+                                  "times_seen":  1
+                              },
+                     "barnaby":  {
+                                     "name":  "Barnaby",
+                                     "description":  "A wise, slow-moving giant desert tortoise who loves quiet moments.",
+                                     "visual_description":  "A large, dome-shelled tortoise with dusty-green skin, gentle wrinkled eyes, and a shell painted with tiny, colorful wildflower patterns. He wears a small, straw sunhat tied under his chin with a green ribbon.",
+                                     "first_seen":  "2026-07-08_mimi-s-slow-ride-to-the-sweet-plums",
+                                     "last_seen":  "2026-07-08_mimi-s-slow-ride-to-the-sweet-plums",
+                                     "times_seen":  1
+                                 }
+                 }
+}

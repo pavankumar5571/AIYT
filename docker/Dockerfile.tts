@@ -1,0 +1,13 @@
+# edge-tts narration worker (Module 08 replacement).
+# Debian slim so pip wheels (aiohttp etc.) and ffmpeg install cleanly.
+FROM python:3.12-slim
+
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ffmpeg ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir edge-tts
+
+WORKDIR /data
+# The worker script lives on the mounted /data/scripts volume.
+CMD ["python", "/data/scripts/narrate_worker.py"]

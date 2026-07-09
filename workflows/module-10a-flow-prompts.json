@@ -1,0 +1,507 @@
+{
+  "id": "aiytM10aFlowPrompts",
+  "name": "Module 10a - Flow Prompt Sheet",
+  "active": false,
+  "settings": {},
+  "nodes": [
+    {
+      "id": "trigger1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "readlog1",
+      "name": "Read Story Log",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/data/logs/story-log.json",
+        "options": {}
+      }
+    },
+    {
+      "id": "extlog1",
+      "name": "Extract Story Log",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        400,
+        0
+      ],
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      }
+    },
+    {
+      "id": "pick1",
+      "name": "Pick Latest Story",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const raw = $('Extract Story Log').first().json;\nconst log = raw.data ?? raw;\nconst used = log.used || [];\nif (!used.length) throw new Error('No stories. Run Module 4 first.');\nconst id = used[used.length - 1].id;\nreturn [{ json: { story_id: id, scenes_path: `/data/output/scenes/${id}.json`, audio_manifest_path: `/data/output/audio/${id}_audio.json` } }];"
+      }
+    },
+    {
+      "id": "readscenes1",
+      "name": "Read Scenes File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        800,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "={{ $('Pick Latest Story').item.json.scenes_path }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "extscenes1",
+      "name": "Extract Scenes",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        0
+      ],
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      }
+    },
+    {
+      "id": "readsys1",
+      "name": "Read Flow System",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/data/prompts/flow-system.md",
+        "options": {}
+      }
+    },
+    {
+      "id": "extsys1",
+      "name": "Extract Flow System",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      }
+    },
+    {
+      "id": "build1",
+      "name": "Build Flow Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const scRaw = $('Extract Scenes').first().json;\nconst sc = scRaw.data ?? scRaw;\nconst system = $('Extract Flow System').first().json.data;\n\nconst charLines = sc.characters.map(c => `- ${c.name}: ${c.visual_description}`).join('\\n');\nconst sceneLines = sc.scenes.map(s => `SCENE ${s.scene_number}\\n  Setting: ${s.setting}\\n  Characters present: ${(s.characters_present||[]).join(', ') || 'none'}\\n  Action: ${s.action}`).join('\\n\\n');\n\nconst userPrompt = `Story: ${sc.title}\\n\\nCHARACTERS (exact fixed appearance - repeat the full look every time the character appears):\\n${charLines}\\n\\nWrite one self-contained Veo visual prompt per scene below. Return a JSON array 'shots' with one object per scene in order.\\n\\n${sceneLines}`;\n\nconst responseSchema = {\n  type: 'OBJECT',\n  properties: {\n    shots: {\n      type: 'ARRAY',\n      items: {\n        type: 'OBJECT',\n        properties: {\n          scene_number: { type: 'INTEGER' },\n          veo_prompt: { type: 'STRING' },\n          camera_move: { type: 'STRING' }\n        },\n        required: ['scene_number', 'veo_prompt', 'camera_move']\n      }\n    }\n  },\n  required: ['shots']\n};\n\nconst body = {\n  systemInstruction: { parts: [{ text: system }] },\n  contents: [{ role: 'user', parts: [{ text: userPrompt }] }],\n  generationConfig: { responseMimeType: 'application/json', responseSchema, temperature: 0.8, maxOutputTokens: 32768 }\n};\nreturn [{ json: { model: 'gemini-2.5-flash', story_id: sc.story_id, body } }];"
+      }
+    },
+    {
+      "id": "gemini1",
+      "name": "Gemini Write Flow Prompts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json.model }}:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 4000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "aiytGeminiCred001",
+          "name": "Gemini - AIYT"
+        }
+      }
+    },
+    {
+      "id": "assemble1",
+      "name": "Assemble Sheet",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nconst scRaw = $('Extract Scenes').first().json;\nconst sc = scRaw.data ?? scRaw;\nlet am = {};\n\nconst text = (resp.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');\nif (!text) throw new Error('Gemini returned no text.');\nconst parsed = JSON.parse(text);\nconst shots = parsed.shots || [];\nconst byScene = {}; shots.forEach(s => byScene[s.scene_number] = s);\nconst durByScene = {}; (am.clips||[]).forEach(c => durByScene[c.scene_number] = c.duration_seconds);\n\nfunction scrub(s){\n  return String(s||'')\n    .replace(/extreme close-?ups?/gi,'very close view')\n    .replace(/close-?ups?/gi,'close view')\n    .replace(/wide(?:-| )angle shots?/gi,'broad view')\n    .replace(/wide shots?/gi,'broad view')\n    .replace(/establishing shots?/gi,'broad view')\n    .replace(/aerial shots?/gi,'high view from above')\n    .replace(/(?:dolly|crane|tracking) shots?/gi,'smooth moving view')\n    .replace(/\\bpanning\\b/gi,'gliding')\n    .replace(/\\bpan\\b/gi,'glide')\n    .replace(/\\btilting\\b/gi,'shifting')\n    .replace(/\\bzoom(?:ing)?(?: in| out)?\\b/gi,'move closer')\n    .replace(/\\bthe camera\\b/gi,'the view')\n    .replace(/\\bcamera\\b/gi,'view')\n    .replace(/\\bshots?\\b/gi,'view')\n    .replace(/\\b([Aa])n (?=very |broad |close |smooth |high )/g,'$1 ').replace(/\\s{2,}/g,' ').trim();\n}\nfunction fullPrompt(visual, narration) {\n  const v = scrub((visual || '').trim());\n  const n = (narration || '').replace(/\\s+/g, ' ').trim();\n  return `${v}\\n\\nAUDIO: A warm, gentle female storyteller narrates softly and clearly: \\\"${n}\\\" Add soft, gentle background ambience and light, whimsical music. No other voices.`;\n}\n\nlet md = `# Flow Shot Sheet - ${sc.title}\\n\\n`;\nmd += `Story ID: ${sc.story_id}\\n\\n`;\nmd += `HOW TO USE THIS IN FLOW:\\n`;\nmd += `1. Open Flow (labs.google/flow) and start a new project (text-to-video).\\n`;\nmd += `2. For each scene: paste the whole prompt block (it includes the visuals AND the narration line as audio). Generate.\\n`;\nmd += `3. Use Flow's \\\"Extend\\\" to grow each clip to roughly its Target length.\\n`;\nmd += `4. Arrange all scenes in order on the timeline and export ONE 1920x1080 video (with audio).\\n`;\nmd += `5. Save the export as: output\\\\\\\\flow_in\\\\\\\\${sc.story_id}.mp4  (then run the publish workflow).\\n\\n`;\nmd += `Tip: keep each character's full description identical every time they appear (the prompts already do this) so Flow keeps them looking the same.\\n\\n---\\n\\n`;\n\nlet totalTarget = 0;\nfor (const scene of sc.scenes) {\n  const n = scene.scene_number;\n  const shot = byScene[n] || {};\n  const dur = durByScene[n] || scene.duration_seconds || 8;\n  totalTarget += dur;\n  md += `## Scene ${n}  (Target: ~${Math.round(dur)}s)\\n\\n`;\n  md += `Camera: ${shot.camera_move || 'slow push-in'}\\n\\n`;\n  md += `PROMPT (paste the whole block into Flow):\\n`;\n  md += '```\\n' + fullPrompt(shot.veo_prompt || scene.action, scene.narration) + '\\n```\\n\\n---\\n\\n';\n}\nmd += `Total target length: ~${Math.round(totalTarget)}s (~${(totalTarget/60).toFixed(1)} min).\\n`;\n\nconst jsonSheet = { story_id: sc.story_id, title: sc.title, total_target_seconds: Math.round(totalTarget*10)/10, shots: sc.scenes.map(scene => ({ scene_number: scene.scene_number, target_seconds: durByScene[scene.scene_number] || scene.duration_seconds, camera_move: (byScene[scene.scene_number]||{}).camera_move || '', prompt: fullPrompt((byScene[scene.scene_number]||{}).veo_prompt || scene.action, scene.narration) })) };\n\nreturn [{ json: {\n  mdB64: Buffer.from(md, 'utf8').toString('base64'),\n  jsonSheet,\n  md_path: `/data/output/flow/${sc.story_id}_flow-sheet.md`,\n  json_path: `/data/output/flow/${sc.story_id}_flow-sheet.json`,\n  story_id: sc.story_id,\n  shot_count: shots.length,\n  total_target_seconds: Math.round(totalTarget*10)/10\n} }];"
+      }
+    },
+    {
+      "id": "mdbin1",
+      "name": "MD to Binary",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "mdB64",
+        "options": {
+          "fileName": "flow-sheet.md",
+          "mimeType": "text/markdown"
+        }
+      }
+    },
+    {
+      "id": "writemd1",
+      "name": "Write MD Sheet",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        0
+      ],
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Assemble Sheet').item.json.md_path }}",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "jsonobj1",
+      "name": "JSON Sheet Object",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2600,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: $('Assemble Sheet').first().json.jsonSheet }];"
+      }
+    },
+    {
+      "id": "jsonfile1",
+      "name": "JSON to File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2800,
+        0
+      ],
+      "parameters": {
+        "operation": "toJson",
+        "mode": "each",
+        "options": {
+          "format": true
+        }
+      }
+    },
+    {
+      "id": "writejson1",
+      "name": "Write JSON Sheet",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        3000,
+        0
+      ],
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Assemble Sheet').item.json.json_path }}",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "readaudio1",
+      "name": "Read Audio Manifest",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "={{ $('Pick Latest Story').item.json.audio_manifest_path }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "extaudio1",
+      "name": "Extract Audio Manifest",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1150,
+        0
+      ],
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "summary1",
+      "name": "Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3200,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "story_id",
+              "type": "string",
+              "value": "={{ $('Assemble Sheet').item.json.story_id }}"
+            },
+            {
+              "id": "s2",
+              "name": "shots",
+              "type": "number",
+              "value": "={{ $('Assemble Sheet').item.json.shot_count }}"
+            },
+            {
+              "id": "s3",
+              "name": "total_target_seconds",
+              "type": "number",
+              "value": "={{ $('Assemble Sheet').item.json.total_target_seconds }}"
+            },
+            {
+              "id": "s4",
+              "name": "sheet",
+              "type": "string",
+              "value": "={{ $('Assemble Sheet').item.json.md_path }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Story Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Story Log": {
+      "main": [
+        [
+          {
+            "node": "Extract Story Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Story Log": {
+      "main": [
+        [
+          {
+            "node": "Pick Latest Story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Latest Story": {
+      "main": [
+        [
+          {
+            "node": "Read Scenes File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Scenes File": {
+      "main": [
+        [
+          {
+            "node": "Extract Scenes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Scenes": {
+      "main": [
+        [
+          {
+            "node": "Read Flow System",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Flow System": {
+      "main": [
+        [
+          {
+            "node": "Extract Flow System",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Flow System": {
+      "main": [
+        [
+          {
+            "node": "Build Flow Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Flow Request": {
+      "main": [
+        [
+          {
+            "node": "Gemini Write Flow Prompts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Write Flow Prompts": {
+      "main": [
+        [
+          {
+            "node": "Assemble Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Sheet": {
+      "main": [
+        [
+          {
+            "node": "MD to Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MD to Binary": {
+      "main": [
+        [
+          {
+            "node": "Write MD Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write MD Sheet": {
+      "main": [
+        [
+          {
+            "node": "JSON Sheet Object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Sheet Object": {
+      "main": [
+        [
+          {
+            "node": "JSON to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON to File": {
+      "main": [
+        [
+          {
+            "node": "Write JSON Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write JSON Sheet": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

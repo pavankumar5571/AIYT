@@ -1,0 +1,494 @@
+{
+  "id": "aiytM7ImageGen001",
+  "name": "Module 07 - Image Generator",
+  "active": false,
+  "settings": {},
+  "nodes": [
+    {
+      "id": "trigger1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "readcfg1",
+      "name": "Read Image Config",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/data/prompts/image-config.json",
+        "options": {}
+      }
+    },
+    {
+      "id": "extcfg1",
+      "name": "Extract Image Config",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        400,
+        0
+      ],
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      }
+    },
+    {
+      "id": "readlog1",
+      "name": "Read Story Log",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/data/logs/story-log.json",
+        "options": {}
+      }
+    },
+    {
+      "id": "extlog1",
+      "name": "Extract Story Log",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        800,
+        0
+      ],
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      }
+    },
+    {
+      "id": "pick1",
+      "name": "Pick Latest Story",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const raw = $('Extract Story Log').first().json;\nconst log = raw.data ?? raw;\nconst used = log.used || [];\nif (!used.length) throw new Error('No stories in story-log.json. Run Module 4 first.');\nconst latest = used[used.length - 1];\nreturn [{ json: { story_id: latest.id, scenes_path: `/data/output/scenes/${latest.id}.json` } }];"
+      }
+    },
+    {
+      "id": "readscenes1",
+      "name": "Read Scenes File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "={{ $json.scenes_path }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "extscenes1",
+      "name": "Extract Scenes",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      }
+    },
+    {
+      "id": "prep1",
+      "name": "Prepare Scene Items",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const cfgRaw = $('Extract Image Config').first().json;\nconst cfg = cfgRaw.data ?? cfgRaw;\nconst scRaw = $('Extract Scenes').first().json;\nconst sc = scRaw.data ?? scRaw;\n\nconst model = cfg.image_model;\nconst ar = cfg.aspect_ratio || '16:9';\nconst ext = cfg.output_ext || 'jpg';\nconst max = cfg.max_scenes || 0;\n\nlet scenes = sc.scenes || [];\nif (max > 0) scenes = scenes.slice(0, max);\nif (!scenes.length) throw new Error('No scenes found. Run Module 5 first.');\n\nreturn scenes.map(s => {\n  const num = String(s.scene_number).padStart(2, '0');\n  const image_file = `${sc.story_id}_scene-${num}.${ext}`;\n  const body = {\n    contents: [{ parts: [{ text: s.image_prompt }] }],\n    generationConfig: { responseModalities: ['IMAGE'], imageConfig: { aspectRatio: ar } }\n  };\n  return { json: { story_id: sc.story_id, scene_number: s.scene_number, model, out_path: `/data/output/images/${image_file}`, image_file, body } };\n});"
+      }
+    },
+    {
+      "id": "genimg1",
+      "name": "Generate Image",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json.model }}:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "aiytGeminiCred001",
+          "name": "Gemini - AIYT"
+        }
+      }
+    },
+    {
+      "id": "extb64_1",
+      "name": "Extract Image B64",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const resp = $input.all();\nconst meta = $('Prepare Scene Items').all();\nconst out = [];\nconst missing = [];\nresp.forEach((r, i) => {\n  const m = meta[i].json;\n  const parts = r.json.candidates?.[0]?.content?.parts || [];\n  const part = parts.find(p => p.inlineData || p.inline_data);\n  const inline = part && (part.inlineData || part.inline_data);\n  if (!inline) { missing.push(m.scene_number); return; }\n  out.push({ json: { story_id: m.story_id, scene_number: m.scene_number, out_path: m.out_path, image_file: m.image_file, imageB64: inline.data } });\n});\nif (!out.length) throw new Error('No images returned at all. Missing scenes: ' + missing.join(','));\nif (missing.length) console.log('WARN: no image for ' + missing.length + ' scene(s): ' + missing.join(','));\nreturn out;"
+      }
+    },
+    {
+      "id": "tobin1",
+      "name": "Base64 to Binary",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "imageB64",
+        "options": {
+          "fileName": "={{ $json.image_file }}",
+          "mimeType": "image/jpeg"
+        }
+      }
+    },
+    {
+      "id": "writeimg1",
+      "name": "Write Image File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        0
+      ],
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Extract Image B64').item.json.out_path }}",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "collect1",
+      "name": "Collect Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2600,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const items = $('Extract Image B64').all().map(i => i.json);\nconst first = items[0] || {};\nconst cfgRaw = $('Extract Image Config').first().json;\nconst cfg = cfgRaw.data ?? cfgRaw;\nconst manifest = {\n  story_id: first.story_id,\n  generated_at: new Date().toISOString(),\n  image_model: cfg.image_model,\n  aspect_ratio: cfg.aspect_ratio,\n  image_count: items.length,\n  images: items.map(i => ({ scene_number: i.scene_number, file: i.image_file })).sort((a, b) => a.scene_number - b.scene_number)\n};\nreturn [{ json: { manifest, manifest_path: `/data/output/images/${first.story_id}_images.json`, image_count: items.length, story_id: first.story_id } }];"
+      }
+    },
+    {
+      "id": "manobj1",
+      "name": "Manifest Object",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2800,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: $('Collect Results').first().json.manifest }];"
+      }
+    },
+    {
+      "id": "manfile1",
+      "name": "Manifest to File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        3000,
+        0
+      ],
+      "parameters": {
+        "operation": "toJson",
+        "mode": "each",
+        "options": {
+          "format": true
+        }
+      }
+    },
+    {
+      "id": "writeman1",
+      "name": "Write Manifest",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        3200,
+        0
+      ],
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Collect Results').item.json.manifest_path }}",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "summary1",
+      "name": "Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3400,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "story_id",
+              "type": "string",
+              "value": "={{ $('Collect Results').item.json.story_id }}"
+            },
+            {
+              "id": "s2",
+              "name": "images_generated",
+              "type": "number",
+              "value": "={{ $('Collect Results').item.json.image_count }}"
+            },
+            {
+              "id": "s3",
+              "name": "manifest",
+              "type": "string",
+              "value": "={{ $('Collect Results').item.json.manifest_path }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Image Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Image Config": {
+      "main": [
+        [
+          {
+            "node": "Extract Image Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Image Config": {
+      "main": [
+        [
+          {
+            "node": "Read Story Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Story Log": {
+      "main": [
+        [
+          {
+            "node": "Extract Story Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Story Log": {
+      "main": [
+        [
+          {
+            "node": "Pick Latest Story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Latest Story": {
+      "main": [
+        [
+          {
+            "node": "Read Scenes File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Scenes File": {
+      "main": [
+        [
+          {
+            "node": "Extract Scenes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Scenes": {
+      "main": [
+        [
+          {
+            "node": "Prepare Scene Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Scene Items": {
+      "main": [
+        [
+          {
+            "node": "Generate Image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Image": {
+      "main": [
+        [
+          {
+            "node": "Extract Image B64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Image B64": {
+      "main": [
+        [
+          {
+            "node": "Base64 to Binary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Base64 to Binary": {
+      "main": [
+        [
+          {
+            "node": "Write Image File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Image File": {
+      "main": [
+        [
+          {
+            "node": "Collect Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Results": {
+      "main": [
+        [
+          {
+            "node": "Manifest Object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manifest Object": {
+      "main": [
+        [
+          {
+            "node": "Manifest to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manifest to File": {
+      "main": [
+        [
+          {
+            "node": "Write Manifest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Manifest": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

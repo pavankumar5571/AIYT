@@ -1,0 +1,196 @@
+{
+  "id": "aiytM12SEO0001",
+  "name": "Module 12 - SEO Metadata",
+  "active": false,
+  "settings": {},
+  "nodes": [
+    {
+      "id": "trigger1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "readcfg1",
+      "name": "Read SEO Config",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [200, 0],
+      "parameters": { "operation": "read", "fileSelector": "/data/prompts/seo-config.json", "options": {} }
+    },
+    {
+      "id": "extcfg1",
+      "name": "Extract SEO Config",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [400, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "readlog1",
+      "name": "Read Story Log",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [600, 0],
+      "parameters": { "operation": "read", "fileSelector": "/data/logs/story-log.json", "options": {} }
+    },
+    {
+      "id": "extlog1",
+      "name": "Extract Story Log",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [800, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "pick1",
+      "name": "Pick Latest Story",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 0],
+      "parameters": {
+        "jsCode": "const raw = $('Extract Story Log').first().json;\nconst log = raw.data ?? raw;\nconst used = log.used || [];\nif (!used.length) throw new Error('No stories. Run Module 4 first.');\nconst id = used[used.length - 1].id;\nreturn [{ json: { story_id: id, story_path: `/data/output/stories/${id}.json` } }];"
+      }
+    },
+    {
+      "id": "readstory1",
+      "name": "Read Story File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [1200, 0],
+      "parameters": { "operation": "read", "fileSelector": "={{ $('Pick Latest Story').item.json.story_path }}", "options": {} }
+    },
+    {
+      "id": "extstory1",
+      "name": "Extract Story",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [1400, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "readsys1",
+      "name": "Read SEO System",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [1600, 0],
+      "parameters": { "operation": "read", "fileSelector": "/data/prompts/seo-system.md", "options": {} }
+    },
+    {
+      "id": "extsys1",
+      "name": "Extract SEO System",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [1800, 0],
+      "parameters": { "operation": "text", "options": {} }
+    },
+    {
+      "id": "build1",
+      "name": "Build SEO Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 0],
+      "parameters": {
+        "jsCode": "const cfgRaw = $('Extract SEO Config').first().json;\nconst cfg = cfgRaw.data ?? cfgRaw;\nconst storyRaw = $('Extract Story').first().json;\nconst story = storyRaw.data ?? storyRaw;\nconst system = $('Extract SEO System').first().json.data;\n\nconst chars = (story.characters || []).map(c => c.name).join(', ');\nconst userPrompt = `Channel: ${cfg.channel} (kids aged ${cfg.audience_age})\\n\\nTITLE: ${story.title}\\nLOGLINE: ${story.logline}\\nTHEME: ${story.theme}\\nMORAL: ${story.moral}\\nCHARACTERS: ${chars}\\n\\nSTORY:\\n${story.story_text}\\n\\nProduce YouTube SEO with about ${cfg.tag_count} tags and ${cfg.hashtag_count} hashtags.`;\n\nconst responseSchema = {\n  type: 'OBJECT',\n  properties: {\n    title: { type: 'STRING' },\n    description: { type: 'STRING' },\n    tags: { type: 'ARRAY', items: { type: 'STRING' } },\n    hashtags: { type: 'ARRAY', items: { type: 'STRING' } }\n  },\n  required: ['title', 'description', 'tags', 'hashtags']\n};\n\nconst body = {\n  systemInstruction: { parts: [{ text: system }] },\n  contents: [{ role: 'user', parts: [{ text: userPrompt }] }],\n  generationConfig: { responseMimeType: 'application/json', responseSchema, temperature: 0.7, maxOutputTokens: 2048 }\n};\nreturn [{ json: { model: cfg.seo_model, story_id: story.id, body } }];"
+      }
+    },
+    {
+      "id": "gemini1",
+      "name": "Gemini Write SEO",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2200, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json.model }}:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": { "timeout": 120000 }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 4000,
+      "credentials": { "googlePalmApi": { "id": "aiytGeminiCred001", "name": "Gemini - AIYT" } }
+    },
+    {
+      "id": "assemble1",
+      "name": "Assemble SEO",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2400, 0],
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nconst storyRaw = $('Extract Story').first().json;\nconst story = storyRaw.data ?? storyRaw;\nconst text = (resp.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');\nif (!text) throw new Error('Gemini returned no SEO text.');\nconst seo = JSON.parse(text);\nfor (const f of ['title', 'description', 'tags', 'hashtags']) { if (!seo[f]) throw new Error('SEO missing field: ' + f); }\n// Enforce YouTube limits\nif (seo.title.length > 100) seo.title = seo.title.slice(0, 100);\n// tags: YouTube total tag length ~500 chars; trim if needed\nlet tags = seo.tags.map(t => String(t).toLowerCase().trim()).filter(Boolean);\nlet total = 0; const kept = [];\nfor (const t of tags) { if (total + t.length + 1 > 480) break; kept.push(t); total += t.length + 1; }\nconst record = {\n  story_id: story.id,\n  title: story.title,\n  generated_at: new Date().toISOString(),\n  youtube: {\n    title: seo.title,\n    description: seo.description,\n    tags: kept,\n    hashtags: seo.hashtags.map(h => { h = String(h).trim(); return h.startsWith('#') ? h : '#' + h.replace(/\\s+/g, ''); }),\n    category_id: '24',\n    made_for_kids: true\n  }\n};\nreturn [{ json: { record, seo_path: `/data/output/seo/${story.id}_seo.json`, title: seo.title, tag_count: kept.length } }];"
+      }
+    },
+    {
+      "id": "seoobj1",
+      "name": "SEO Object",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2600, 0],
+      "parameters": { "jsCode": "return [{ json: $('Assemble SEO').first().json.record }];" }
+    },
+    {
+      "id": "seofile1",
+      "name": "SEO to File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [2800, 0],
+      "parameters": { "operation": "toJson", "mode": "each", "options": { "format": true } }
+    },
+    {
+      "id": "writeseo1",
+      "name": "Write SEO File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [3000, 0],
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Assemble SEO').item.json.seo_path }}",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "summary1",
+      "name": "Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3200, 0],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "s1", "name": "seo_title", "type": "string", "value": "={{ $('Assemble SEO').item.json.title }}" },
+            { "id": "s2", "name": "tag_count", "type": "number", "value": "={{ $('Assemble SEO').item.json.tag_count }}" },
+            { "id": "s3", "name": "saved_to", "type": "string", "value": "={{ $('Assemble SEO').item.json.seo_path }}" }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[{ "node": "Read SEO Config", "type": "main", "index": 0 }]] },
+    "Read SEO Config": { "main": [[{ "node": "Extract SEO Config", "type": "main", "index": 0 }]] },
+    "Extract SEO Config": { "main": [[{ "node": "Read Story Log", "type": "main", "index": 0 }]] },
+    "Read Story Log": { "main": [[{ "node": "Extract Story Log", "type": "main", "index": 0 }]] },
+    "Extract Story Log": { "main": [[{ "node": "Pick Latest Story", "type": "main", "index": 0 }]] },
+    "Pick Latest Story": { "main": [[{ "node": "Read Story File", "type": "main", "index": 0 }]] },
+    "Read Story File": { "main": [[{ "node": "Extract Story", "type": "main", "index": 0 }]] },
+    "Extract Story": { "main": [[{ "node": "Read SEO System", "type": "main", "index": 0 }]] },
+    "Read SEO System": { "main": [[{ "node": "Extract SEO System", "type": "main", "index": 0 }]] },
+    "Extract SEO System": { "main": [[{ "node": "Build SEO Request", "type": "main", "index": 0 }]] },
+    "Build SEO Request": { "main": [[{ "node": "Gemini Write SEO", "type": "main", "index": 0 }]] },
+    "Gemini Write SEO": { "main": [[{ "node": "Assemble SEO", "type": "main", "index": 0 }]] },
+    "Assemble SEO": { "main": [[{ "node": "SEO Object", "type": "main", "index": 0 }]] },
+    "SEO Object": { "main": [[{ "node": "SEO to File", "type": "main", "index": 0 }]] },
+    "SEO to File": { "main": [[{ "node": "Write SEO File", "type": "main", "index": 0 }]] },
+    "Write SEO File": { "main": [[{ "node": "Summary", "type": "main", "index": 0 }]] }
+  }
+}

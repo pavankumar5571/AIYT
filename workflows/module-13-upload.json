@@ -1,0 +1,177 @@
+{
+  "id": "aiytM13Upload001",
+  "name": "Module 13 - YouTube Upload",
+  "active": false,
+  "settings": {},
+  "nodes": [
+    {
+      "id": "trigger1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "readlog1",
+      "name": "Read Story Log",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [200, 0],
+      "parameters": { "operation": "read", "fileSelector": "/data/logs/story-log.json", "options": {} }
+    },
+    {
+      "id": "extlog1",
+      "name": "Extract Story Log",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [400, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "pick1",
+      "name": "Pick Latest Story",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [600, 0],
+      "parameters": {
+        "jsCode": "const raw = $('Extract Story Log').first().json;\nconst log = raw.data ?? raw;\nconst used = log.used || [];\nif (!used.length) throw new Error('No stories. Run Module 4 first.');\nconst id = used[used.length - 1].id;\nreturn [{ json: {\n  story_id: id,\n  video_path: `/data/output/videos/${id}.mp4`,\n  seo_path: `/data/output/seo/${id}_seo.json`,\n  thumb_path: `/data/output/thumbnails/${id}.jpg`\n} }];"
+      }
+    },
+    {
+      "id": "readseo1",
+      "name": "Read SEO File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [800, 0],
+      "parameters": { "operation": "read", "fileSelector": "={{ $('Pick Latest Story').item.json.seo_path }}", "options": {} }
+    },
+    {
+      "id": "extseo1",
+      "name": "Extract SEO",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [1000, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "buildmeta1",
+      "name": "Build Metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 0],
+      "parameters": {
+        "jsCode": "const seoRaw = $('Extract SEO').first().json;\nconst yt = (seoRaw.data ?? seoRaw).youtube;\nif (!yt) throw new Error('SEO file missing youtube metadata. Run Module 12 first.');\n// PRIVACY: 'private' (only you). Change to 'unlisted' or 'public' when ready.\nconst metadata = {\n  snippet: {\n    title: yt.title,\n    description: yt.description,\n    tags: yt.tags || [],\n    categoryId: String(yt.category_id || '24')\n  },\n  status: {\n    privacyStatus: 'private',\n    selfDeclaredMadeForKids: yt.made_for_kids === false ? false : true,\n    embeddable: true\n  }\n};\nreturn [{ json: { metadata } }];"
+      }
+    },
+    {
+      "id": "init1",
+      "name": "Init Upload",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1400, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [ { "name": "X-Upload-Content-Type", "value": "video/mp4" } ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.metadata) }}",
+        "options": { "response": { "response": { "fullResponse": true } } }
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "credentials": { "youTubeOAuth2Api": { "id": "aiytYouTubeCred01", "name": "YouTube - AIYT" } }
+    },
+    {
+      "id": "readvid1",
+      "name": "Read Video File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [1600, 0],
+      "parameters": { "operation": "read", "fileSelector": "={{ $('Pick Latest Story').item.json.video_path }}", "options": {} }
+    },
+    {
+      "id": "putvid1",
+      "name": "Upload Bytes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1800, 0],
+      "parameters": {
+        "method": "PUT",
+        "url": "={{ $('Init Upload').item.json.headers.location }}",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": { "timeout": 600000 }
+      },
+      "credentials": { "youTubeOAuth2Api": { "id": "aiytYouTubeCred01", "name": "YouTube - AIYT" } }
+    },
+    {
+      "id": "readthumb1",
+      "name": "Read Thumbnail File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [2000, 0],
+      "parameters": { "operation": "read", "fileSelector": "={{ $('Pick Latest Story').item.json.thumb_path }}", "options": {} }
+    },
+    {
+      "id": "setthumb1",
+      "name": "Set Thumbnail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2200, 0],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.googleapis.com/upload/youtube/v3/thumbnails/set?videoId={{ $('Upload Bytes').item.json.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "youTubeOAuth2Api",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "credentials": { "youTubeOAuth2Api": { "id": "aiytYouTubeCred01", "name": "YouTube - AIYT" } }
+    },
+    {
+      "id": "summary1",
+      "name": "Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2400, 0],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "s1", "name": "video_id", "type": "string", "value": "={{ $('Upload Bytes').item.json.id }}" },
+            { "id": "s2", "name": "url", "type": "string", "value": "=https://youtu.be/{{ $('Upload Bytes').item.json.id }}" },
+            { "id": "s3", "name": "privacy", "type": "string", "value": "={{ $('Upload Bytes').item.json.status.privacyStatus }}" },
+            { "id": "s4", "name": "title", "type": "string", "value": "={{ $('Upload Bytes').item.json.snippet.title }}" }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[{ "node": "Read Story Log", "type": "main", "index": 0 }]] },
+    "Read Story Log": { "main": [[{ "node": "Extract Story Log", "type": "main", "index": 0 }]] },
+    "Extract Story Log": { "main": [[{ "node": "Pick Latest Story", "type": "main", "index": 0 }]] },
+    "Pick Latest Story": { "main": [[{ "node": "Read SEO File", "type": "main", "index": 0 }]] },
+    "Read SEO File": { "main": [[{ "node": "Extract SEO", "type": "main", "index": 0 }]] },
+    "Extract SEO": { "main": [[{ "node": "Build Metadata", "type": "main", "index": 0 }]] },
+    "Build Metadata": { "main": [[{ "node": "Init Upload", "type": "main", "index": 0 }]] },
+    "Init Upload": { "main": [[{ "node": "Read Video File", "type": "main", "index": 0 }]] },
+    "Read Video File": { "main": [[{ "node": "Upload Bytes", "type": "main", "index": 0 }]] },
+    "Upload Bytes": { "main": [[{ "node": "Read Thumbnail File", "type": "main", "index": 0 }]] },
+    "Read Thumbnail File": { "main": [[{ "node": "Set Thumbnail", "type": "main", "index": 0 }]] },
+    "Set Thumbnail": { "main": [[{ "node": "Summary", "type": "main", "index": 0 }]] }
+  }
+}

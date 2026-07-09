@@ -1,0 +1,193 @@
+{
+  "id": "aiytM6CharMem001",
+  "name": "Module 06 - Character Memory",
+  "active": false,
+  "settings": {},
+  "nodes": [
+    {
+      "id": "trigger1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "readlog1",
+      "name": "Read Story Log",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [200, 0],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/data/logs/story-log.json",
+        "options": {}
+      }
+    },
+    {
+      "id": "extlog1",
+      "name": "Extract Story Log",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [400, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "pick1",
+      "name": "Pick Latest Story",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [600, 0],
+      "parameters": {
+        "jsCode": "const raw = $('Extract Story Log').first().json;\nconst log = raw.data ?? raw;\nconst used = log.used || [];\nif (!used.length) throw new Error('No stories in story-log.json. Run Module 4 first.');\nconst latest = used[used.length - 1];\nreturn [{ json: { story_id: latest.id, story_path: `/data/output/stories/${latest.id}.json` } }];"
+      }
+    },
+    {
+      "id": "readstory1",
+      "name": "Read Story File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [800, 0],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "={{ $json.story_path }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "extstory1",
+      "name": "Extract Story",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [1000, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "readbible1",
+      "name": "Read Character Bible",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [1200, 0],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/data/prompts/character-bible.json",
+        "options": {}
+      }
+    },
+    {
+      "id": "extbible1",
+      "name": "Extract Bible",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [1400, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "resolve1",
+      "name": "Resolve Characters",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1600, 0],
+      "parameters": {
+        "jsCode": "const storyRaw = $('Extract Story').first().json;\nconst story = storyRaw.data ?? storyRaw;\nconst bibleRaw = $('Extract Bible').first().json;\nconst bible = bibleRaw.data ?? bibleRaw;\n\nconst recurring = bible.recurring_characters || {};\nconst registry = bible.registry || {};\nconst norm = s => String(s).toLowerCase().trim();\n\nconst recurringByNorm = {};\nfor (const [k, v] of Object.entries(recurring)) recurringByNorm[norm(k)] = { key: k, ...v };\n\nconst changes = [];\nconst resolvedChars = (story.characters || []).map(ch => {\n  const key = norm(ch.name);\n  if (recurringByNorm[key]) {\n    const canon = recurringByNorm[key];\n    changes.push({ name: ch.name, action: 'recurring-locked' });\n    return { name: ch.name, description: canon.description ?? ch.description, visual_description: canon.visual_description };\n  }\n  if (registry[key]) {\n    const canon = registry[key];\n    registry[key] = { ...canon, times_seen: (canon.times_seen || 1) + 1, last_seen: story.id };\n    changes.push({ name: ch.name, action: 'registry-match', times_seen: registry[key].times_seen });\n    return { name: ch.name, description: canon.description ?? ch.description, visual_description: canon.visual_description };\n  }\n  registry[key] = { name: ch.name, description: ch.description, visual_description: ch.visual_description, first_seen: story.id, last_seen: story.id, times_seen: 1 };\n  changes.push({ name: ch.name, action: 'new-registered' });\n  return ch;\n});\n\nconst updatedStory = { ...story, characters: resolvedChars, character_memory: { resolved_at: new Date().toISOString(), changes } };\nconst updatedBible = { ...bible, recurring_characters: recurring, registry };\n\nreturn [{ json: {\n  updatedStory,\n  updatedBible,\n  story_path: `/data/output/stories/${story.id}.json`,\n  bible_path: '/data/prompts/character-bible.json',\n  story_id: story.id,\n  registry_size: Object.keys(registry).length,\n  summary: changes.map(c => `${c.name}: ${c.action}${c.times_seen ? ' (x' + c.times_seen + ')' : ''}`).join('  |  ')\n} }];"
+      }
+    },
+    {
+      "id": "storyobj1",
+      "name": "Story Object",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1800, 0],
+      "parameters": {
+        "jsCode": "return [{ json: $('Resolve Characters').first().json.updatedStory }];"
+      }
+    },
+    {
+      "id": "storyfile1",
+      "name": "Story to File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [2000, 0],
+      "parameters": { "operation": "toJson", "mode": "each", "options": { "format": true } }
+    },
+    {
+      "id": "writestory1",
+      "name": "Write Story File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [2200, 0],
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Resolve Characters').item.json.story_path }}",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "bibleobj1",
+      "name": "Bible Object",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2400, 0],
+      "parameters": {
+        "jsCode": "return [{ json: $('Resolve Characters').first().json.updatedBible }];"
+      }
+    },
+    {
+      "id": "biblefile1",
+      "name": "Bible to File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [2600, 0],
+      "parameters": { "operation": "toJson", "mode": "each", "options": { "format": true } }
+    },
+    {
+      "id": "writebible1",
+      "name": "Write Character Bible",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [2800, 0],
+      "parameters": {
+        "operation": "write",
+        "fileName": "/data/prompts/character-bible.json",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "summary1",
+      "name": "Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3000, 0],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "s1", "name": "story_id", "type": "string", "value": "={{ $('Resolve Characters').item.json.story_id }}" },
+            { "id": "s2", "name": "resolution", "type": "string", "value": "={{ $('Resolve Characters').item.json.summary }}" },
+            { "id": "s3", "name": "registry_size", "type": "number", "value": "={{ $('Resolve Characters').item.json.registry_size }}" }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[{ "node": "Read Story Log", "type": "main", "index": 0 }]] },
+    "Read Story Log": { "main": [[{ "node": "Extract Story Log", "type": "main", "index": 0 }]] },
+    "Extract Story Log": { "main": [[{ "node": "Pick Latest Story", "type": "main", "index": 0 }]] },
+    "Pick Latest Story": { "main": [[{ "node": "Read Story File", "type": "main", "index": 0 }]] },
+    "Read Story File": { "main": [[{ "node": "Extract Story", "type": "main", "index": 0 }]] },
+    "Extract Story": { "main": [[{ "node": "Read Character Bible", "type": "main", "index": 0 }]] },
+    "Read Character Bible": { "main": [[{ "node": "Extract Bible", "type": "main", "index": 0 }]] },
+    "Extract Bible": { "main": [[{ "node": "Resolve Characters", "type": "main", "index": 0 }]] },
+    "Resolve Characters": { "main": [[{ "node": "Story Object", "type": "main", "index": 0 }]] },
+    "Story Object": { "main": [[{ "node": "Story to File", "type": "main", "index": 0 }]] },
+    "Story to File": { "main": [[{ "node": "Write Story File", "type": "main", "index": 0 }]] },
+    "Write Story File": { "main": [[{ "node": "Bible Object", "type": "main", "index": 0 }]] },
+    "Bible Object": { "main": [[{ "node": "Bible to File", "type": "main", "index": 0 }]] },
+    "Bible to File": { "main": [[{ "node": "Write Character Bible", "type": "main", "index": 0 }]] },
+    "Write Character Bible": { "main": [[{ "node": "Summary", "type": "main", "index": 0 }]] }
+  }
+}

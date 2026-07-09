@@ -1,0 +1,11 @@
+{
+  "_comment": "Narration settings. ACTIVE engine is edge-tts (free Microsoft voices, no key/quota) via the aiyt_tts worker: it reads edge_voice + edge_rate. edge_voice examples: en-US-JennyNeural (warm), en-US-AriaNeural, en-GB-SoniaNeural, en-US-AnaNeural (child). edge_rate like '+0%' / '-10%'. The gemini_* fields below are legacy (rate-limited) and unused by the worker.",
+  "edge_voice": "en-US-JennyNeural",
+  "edge_rate": "+0%",
+  "tts_model": "gemini-2.5-flash-preview-tts",
+  "voice_name": "Kore",
+  "style_prompt": "Read this aloud in a warm, gentle, expressive storyteller voice for young children:",
+  "sample_rate": 24000,
+  "output_ext": "wav",
+  "max_scenes": 0
+}

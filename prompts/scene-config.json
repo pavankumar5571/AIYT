@@ -1,0 +1,9 @@
+{
+  "text_model": "gemini-2.5-flash",
+  "target_scenes": 42,
+  "scenes_min": 36,
+  "scenes_max": 48,
+  "narration_wps": 2.0,
+  "image_style": "Pixar-quality 3D animated film still, glossy rounded characters with soft subsurface skin, expressive faces, cinematic depth and lighting, lush detailed environments, warm rich color palette, 16:9 widescreen composition, wondrous and heartwarming mood.",
+  "image_quality_suffix": "Highly detailed 3D animation render, consistent character design, cinematic composition, soft global illumination, no text, no words, no letters, no watermark."
+}

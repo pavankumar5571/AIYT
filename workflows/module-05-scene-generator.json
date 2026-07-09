@@ -1,0 +1,468 @@
+{
+  "id": "aiytM5SceneGen001",
+  "name": "Module 05 - Scene Generator",
+  "active": false,
+  "settings": {},
+  "nodes": [
+    {
+      "id": "trigger1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "readcfg1",
+      "name": "Read Scene Config",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        200,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/data/prompts/scene-config.json",
+        "options": {}
+      }
+    },
+    {
+      "id": "extcfg1",
+      "name": "Extract Scene Config",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        400,
+        0
+      ],
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      }
+    },
+    {
+      "id": "readlog1",
+      "name": "Read Story Log",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/data/logs/story-log.json",
+        "options": {}
+      }
+    },
+    {
+      "id": "extlog1",
+      "name": "Extract Story Log",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        800,
+        0
+      ],
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      }
+    },
+    {
+      "id": "pick1",
+      "name": "Pick Latest Story",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const raw = $('Extract Story Log').first().json;\nconst log = raw.data ?? raw;\nconst used = log.used || [];\nif (!used.length) throw new Error('No stories in story-log.json. Run Module 4 first.');\nconst latest = used[used.length - 1];\nreturn [{ json: { story_id: latest.id, story_path: `/data/output/stories/${latest.id}.json` } }];"
+      }
+    },
+    {
+      "id": "readstory1",
+      "name": "Read Story File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "={{ $json.story_path }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "extstory1",
+      "name": "Extract Story",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      }
+    },
+    {
+      "id": "readsys1",
+      "name": "Read Scene System",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        0
+      ],
+      "parameters": {
+        "operation": "read",
+        "fileSelector": "/data/prompts/scene-system.md",
+        "options": {}
+      }
+    },
+    {
+      "id": "extsys1",
+      "name": "Extract Scene System",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "operation": "text",
+        "options": {}
+      }
+    },
+    {
+      "id": "build1",
+      "name": "Build Scene Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const cfgRaw = $('Extract Scene Config').first().json;\nconst cfg = cfgRaw.data ?? cfgRaw;\nconst storyRaw = $('Extract Story').first().json;\nconst story = storyRaw.data ?? storyRaw;\nconst system = $('Extract Scene System').first().json.data;\n\nconst charList = story.characters.map(c => `- ${c.name}: ${c.description}`).join('\\n');\n\nconst userPrompt = `Break this children's story into about ${cfg.target_scenes} illustrated scenes (between ${cfg.scenes_min} and ${cfg.scenes_max}).\\n\\nSTORY TITLE: ${story.title}\\n\\nCHARACTERS:\\n${charList}\\n\\nFULL NARRATION (split this EXACT text across the scenes, in order, word-for-word, with no additions, paraphrasing, or omissions):\\n\"\"\"\\n${story.story_text}\\n\"\"\"\\n\\nReturn scenes in order starting at scene_number 1. For each scene provide: narration (the exact consecutive chunk of the narration text), setting, characters_present (names from the list, or empty), and action. Every word of the narration must appear in exactly one scene, in order. Keep scenes roughly balanced in length.`;\n\nconst responseSchema = {\n  type: 'OBJECT',\n  properties: {\n    scenes: {\n      type: 'ARRAY',\n      items: {\n        type: 'OBJECT',\n        properties: {\n          scene_number: { type: 'INTEGER' },\n          narration: { type: 'STRING' },\n          setting: { type: 'STRING' },\n          characters_present: { type: 'ARRAY', items: { type: 'STRING' } },\n          action: { type: 'STRING' }\n        },\n        required: ['scene_number', 'narration', 'setting', 'characters_present', 'action']\n      }\n    }\n  },\n  required: ['scenes']\n};\n\nconst body = {\n  systemInstruction: { parts: [{ text: system }] },\n  contents: [{ role: 'user', parts: [{ text: userPrompt }] }],\n  generationConfig: { responseMimeType: 'application/json', responseSchema, temperature: 0.7, maxOutputTokens: 32768 }\n};\n\nreturn [{ json: { model: cfg.text_model, story_id: story.id, body } }];"
+      }
+    },
+    {
+      "id": "gemini1",
+      "name": "Gemini Generate Scenes",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2200,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://generativelanguage.googleapis.com/v1beta/models/{{ $json.model }}:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json.body) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "aiytGeminiCred001",
+          "name": "Gemini - AIYT"
+        }
+      }
+    },
+    {
+      "id": "assemble1",
+      "name": "Assemble Scenes",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const resp = $input.first().json;\nconst cfgRaw = $('Extract Scene Config').first().json;\nconst cfg = cfgRaw.data ?? cfgRaw;\nconst storyRaw = $('Extract Story').first().json;\nconst story = storyRaw.data ?? storyRaw;\n\nconst text = (resp.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');\nif (!text) throw new Error('Gemini returned no text. Raw: ' + JSON.stringify(resp).slice(0, 300));\nlet parsed;\ntry { parsed = JSON.parse(text); } catch (e) { throw new Error('Scenes not valid JSON. First 200: ' + text.slice(0, 200)); }\nconst scenes = parsed.scenes;\nif (!Array.isArray(scenes) || scenes.length === 0) throw new Error('No scenes returned.');\n\nconst charMap = {};\nfor (const c of story.characters) charMap[c.name.toLowerCase()] = c;\n\nconst wps = cfg.narration_wps || 2.3;\nconst style = cfg.image_style || '';\nconst suffix = cfg.image_quality_suffix || '';\n\nlet totalWords = 0, totalDur = 0;\nconst built = scenes.map((s, i) => {\n  const narration = (s.narration || '').trim();\n  const words = narration ? narration.split(/\\s+/).length : 0;\n  totalWords += words;\n  const duration = Math.max(2.0, Math.round((words / wps) * 10) / 10);\n  totalDur += duration;\n\n  const present = (s.characters_present || []).filter(n => charMap[String(n).toLowerCase()]);\n  const charBlock = present.map(n => { const c = charMap[String(n).toLowerCase()]; return `${c.name} (${c.visual_description})`; }).join('; ');\n\n  const clean = (v) => String(v || '').trim().replace(/\\s*\\.\\s*$/, '');\n  const parts = [style, `Scene setting: ${clean(s.setting)}.`, `${clean(s.action)}.`];\n  if (charBlock) parts.push(`Characters in view: ${charBlock}.`);\n  if (suffix) parts.push(suffix);\n  const image_prompt = parts.filter(Boolean).join(' ');\n\n  return { scene_number: s.scene_number ?? (i + 1), narration, words, duration_seconds: duration, setting: s.setting, characters_present: present, action: s.action, image_prompt };\n});\n\nconst storyWords = story.story_text.trim().split(/\\s+/).length;\nconst ratio = totalWords / storyWords;\nif (ratio < 0.8 || ratio > 1.25) throw new Error(`Scene narration (${totalWords} words) drifted from story (${storyWords}). Ratio ${ratio.toFixed(2)} - model likely paraphrased.`);\n\nconst record = {\n  story_id: story.id,\n  title: story.title,\n  generated_at: new Date().toISOString(),\n  scene_model: cfg.text_model,\n  scene_count: built.length,\n  total_words: totalWords,\n  total_duration_seconds: Math.round(totalDur * 10) / 10,\n  characters: story.characters,\n  scenes: built\n};\n\nreturn [{ json: { record, scenes_path: `/data/output/scenes/${story.id}.json`, scene_count: built.length, total_duration_seconds: record.total_duration_seconds, title: story.title } }];"
+      }
+    },
+    {
+      "id": "scenesobj1",
+      "name": "Scenes Object",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2600,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: $input.first().json.record }];"
+      }
+    },
+    {
+      "id": "scenesfile1",
+      "name": "Scenes to File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        2800,
+        0
+      ],
+      "parameters": {
+        "operation": "toJson",
+        "mode": "each",
+        "options": {
+          "format": true
+        }
+      }
+    },
+    {
+      "id": "writescenes1",
+      "name": "Write Scenes File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        3000,
+        0
+      ],
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Assemble Scenes').item.json.scenes_path }}",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "summary1",
+      "name": "Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3200,
+        0
+      ],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "s1",
+              "name": "title",
+              "type": "string",
+              "value": "={{ $('Assemble Scenes').item.json.title }}"
+            },
+            {
+              "id": "s2",
+              "name": "scene_count",
+              "type": "number",
+              "value": "={{ $('Assemble Scenes').item.json.scene_count }}"
+            },
+            {
+              "id": "s3",
+              "name": "total_duration_seconds",
+              "type": "number",
+              "value": "={{ $('Assemble Scenes').item.json.total_duration_seconds }}"
+            },
+            {
+              "id": "s4",
+              "name": "saved_to",
+              "type": "string",
+              "value": "={{ $('Assemble Scenes').item.json.scenes_path }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read Scene Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Scene Config": {
+      "main": [
+        [
+          {
+            "node": "Extract Scene Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Scene Config": {
+      "main": [
+        [
+          {
+            "node": "Read Story Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Story Log": {
+      "main": [
+        [
+          {
+            "node": "Extract Story Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Story Log": {
+      "main": [
+        [
+          {
+            "node": "Pick Latest Story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pick Latest Story": {
+      "main": [
+        [
+          {
+            "node": "Read Story File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Story File": {
+      "main": [
+        [
+          {
+            "node": "Extract Story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Story": {
+      "main": [
+        [
+          {
+            "node": "Read Scene System",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Scene System": {
+      "main": [
+        [
+          {
+            "node": "Extract Scene System",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Scene System": {
+      "main": [
+        [
+          {
+            "node": "Build Scene Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Scene Request": {
+      "main": [
+        [
+          {
+            "node": "Gemini Generate Scenes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Generate Scenes": {
+      "main": [
+        [
+          {
+            "node": "Assemble Scenes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assemble Scenes": {
+      "main": [
+        [
+          {
+            "node": "Scenes Object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scenes Object": {
+      "main": [
+        [
+          {
+            "node": "Scenes to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Scenes to File": {
+      "main": [
+        [
+          {
+            "node": "Write Scenes File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Scenes File": {
+      "main": [
+        [
+          {
+            "node": "Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

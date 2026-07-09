@@ -1,0 +1,198 @@
+{
+  "id": "aiytM9Subtitles01",
+  "name": "Module 09 - Subtitles",
+  "active": false,
+  "settings": {},
+  "nodes": [
+    {
+      "id": "trigger1",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {}
+    },
+    {
+      "id": "readcfg1",
+      "name": "Read Subtitle Config",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [200, 0],
+      "parameters": { "operation": "read", "fileSelector": "/data/prompts/subtitle-config.json", "options": {} }
+    },
+    {
+      "id": "extcfg1",
+      "name": "Extract Subtitle Config",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [400, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "readlog1",
+      "name": "Read Story Log",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [600, 0],
+      "parameters": { "operation": "read", "fileSelector": "/data/logs/story-log.json", "options": {} }
+    },
+    {
+      "id": "extlog1",
+      "name": "Extract Story Log",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [800, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "pick1",
+      "name": "Pick Latest Story",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 0],
+      "parameters": {
+        "jsCode": "const raw = $('Extract Story Log').first().json;\nconst log = raw.data ?? raw;\nconst used = log.used || [];\nif (!used.length) throw new Error('No stories in story-log.json. Run Module 4 first.');\nconst id = used[used.length - 1].id;\nreturn [{ json: { story_id: id, scenes_path: `/data/output/scenes/${id}.json`, audio_manifest_path: `/data/output/audio/${id}_audio.json` } }];"
+      }
+    },
+    {
+      "id": "readscenes1",
+      "name": "Read Scenes File",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [1200, 0],
+      "parameters": { "operation": "read", "fileSelector": "={{ $json.scenes_path }}", "options": {} }
+    },
+    {
+      "id": "extscenes1",
+      "name": "Extract Scenes",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [1400, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "readaudio1",
+      "name": "Read Audio Manifest",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [1600, 0],
+      "parameters": { "operation": "read", "fileSelector": "={{ $('Pick Latest Story').item.json.audio_manifest_path }}", "options": {} }
+    },
+    {
+      "id": "extaudio1",
+      "name": "Extract Audio Manifest",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [1800, 0],
+      "parameters": { "operation": "fromJson", "options": {} }
+    },
+    {
+      "id": "build1",
+      "name": "Build Subtitles",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 0],
+      "parameters": {
+        "jsCode": "const cfgRaw = $('Extract Subtitle Config').first().json;\nconst cfg = cfgRaw.data ?? cfgRaw;\nconst scRaw = $('Extract Scenes').first().json;\nconst sc = scRaw.data ?? scRaw;\nconst amRaw = $('Extract Audio Manifest').first().json;\nconst am = amRaw.data ?? amRaw;\n\nconst maxChars = cfg.max_chars_per_cue || 42;\nconst maxWords = cfg.max_words_per_cue || 9;\n\nconst durByScene = {};\nfor (const c of (am.clips || [])) durByScene[c.scene_number] = c.duration_seconds;\n\nfunction chunk(text) {\n  const sentences = text.match(/[^.!?]+[.!?]*\\s*/g) || [text];\n  const cues = [];\n  for (let s of sentences) {\n    s = s.trim();\n    if (!s) continue;\n    const words = s.split(/\\s+/);\n    if (words.length <= maxWords && s.length <= maxChars) { cues.push(s); continue; }\n    let cur = [], curLen = 0;\n    for (const w of words) {\n      const addLen = curLen + (cur.length ? 1 : 0) + w.length;\n      if (cur.length && (cur.length >= maxWords || addLen > maxChars)) {\n        cues.push(cur.join(' ')); cur = [w]; curLen = w.length;\n      } else { cur.push(w); curLen = addLen; }\n    }\n    if (cur.length) cues.push(cur.join(' '));\n  }\n  return cues.length ? cues : [text];\n}\n\nconst p = (n, l=2) => String(n).padStart(l, '0');\nfunction fmtSrt(t) { const ms = Math.round((t - Math.floor(t)) * 1000); let s = Math.floor(t); const h = Math.floor(s/3600); s -= h*3600; const m = Math.floor(s/60); s -= m*60; return `${p(h)}:${p(m)}:${p(s)},${p(ms,3)}`; }\nfunction fmtAss(t) { const cs = Math.round((t - Math.floor(t)) * 100); let s = Math.floor(t); const h = Math.floor(s/3600); s -= h*3600; const m = Math.floor(s/60); s -= m*60; return `${h}:${p(m)}:${p(s)}.${p(cs)}`; }\n\nconst cues = [];\nlet cursor = 0;\nfor (const scene of sc.scenes) {\n  const dur = durByScene[scene.scene_number] || scene.duration_seconds || 2;\n  const parts = chunk(scene.narration);\n  const wc = parts.map(x => x.split(/\\s+/).length);\n  const totalW = wc.reduce((a, b) => a + b, 0) || 1;\n  let local = cursor;\n  parts.forEach((text, i) => {\n    const cueDur = (wc[i] / totalW) * dur;\n    cues.push({ start: local, end: local + cueDur, text });\n    local += cueDur;\n  });\n  cursor += dur;\n}\n\nlet srt = '';\ncues.forEach((c, i) => { srt += `${i+1}\\n${fmtSrt(c.start)} --> ${fmtSrt(c.end)}\\n${c.text}\\n\\n`; });\n\nconst st = cfg.ass_style || {};\nconst font = st.font || 'DejaVu Sans';\nconst size = st.font_size || 54;\nconst primary = st.primary_color || '&H00FFFFFF';\nconst outlineC = st.outline_color || '&H00000000';\nconst outline = st.outline ?? 4;\nconst shadow = st.shadow ?? 1;\nconst align = st.alignment ?? 2;\nconst marginV = st.margin_v ?? 70;\nconst assHeader = `[Script Info]\\nScriptType: v4.00+\\nPlayResX: 1920\\nPlayResY: 1080\\nWrapStyle: 0\\nScaledBorderAndShadow: yes\\n\\n[V4+ Styles]\\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding\\nStyle: Default,${font},${size},${primary},&H000000FF,${outlineC},&H64000000,-1,0,0,0,100,100,0,0,1,${outline},${shadow},${align},60,60,${marginV},1\\n\\n[Events]\\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\\n`;\nlet ass = assHeader;\ncues.forEach(c => { const t = c.text.replace(/\\r?\\n/g, ' ').trim(); ass += `Dialogue: 0,${fmtAss(c.start)},${fmtAss(c.end)},Default,,0,0,0,,${t}\\n`; });\n\nreturn [{ json: {\n  story_id: sc.story_id,\n  srt_path: `/data/output/subtitles/${sc.story_id}.srt`,\n  ass_path: `/data/output/subtitles/${sc.story_id}.ass`,\n  srtB64: Buffer.from(srt, 'utf8').toString('base64'),\n  assB64: Buffer.from(ass, 'utf8').toString('base64'),\n  cue_count: cues.length,\n  total_duration_seconds: Math.round(cursor * 100) / 100\n} }];"
+      }
+    },
+    {
+      "id": "srtbin1",
+      "name": "SRT to Binary",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [2200, 0],
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "srtB64",
+        "options": { "fileName": "subtitles.srt", "mimeType": "application/x-subrip" }
+      }
+    },
+    {
+      "id": "writesrt1",
+      "name": "Write SRT",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [2400, 0],
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Build Subtitles').item.json.srt_path }}",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "prepass1",
+      "name": "Prep ASS",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2600, 0],
+      "parameters": {
+        "jsCode": "return [{ json: { assB64: $('Build Subtitles').first().json.assB64 } }];"
+      }
+    },
+    {
+      "id": "assbin1",
+      "name": "ASS to Binary",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [2800, 0],
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "assB64",
+        "options": { "fileName": "subtitles.ass", "mimeType": "text/x-ssa" }
+      }
+    },
+    {
+      "id": "writeass1",
+      "name": "Write ASS",
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [3000, 0],
+      "parameters": {
+        "operation": "write",
+        "fileName": "={{ $('Build Subtitles').item.json.ass_path }}",
+        "dataPropertyName": "data",
+        "options": {}
+      }
+    },
+    {
+      "id": "summary1",
+      "name": "Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3200, 0],
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            { "id": "s1", "name": "story_id", "type": "string", "value": "={{ $('Build Subtitles').item.json.story_id }}" },
+            { "id": "s2", "name": "cue_count", "type": "number", "value": "={{ $('Build Subtitles').item.json.cue_count }}" },
+            { "id": "s3", "name": "total_duration_seconds", "type": "number", "value": "={{ $('Build Subtitles').item.json.total_duration_seconds }}" },
+            { "id": "s4", "name": "srt", "type": "string", "value": "={{ $('Build Subtitles').item.json.srt_path }}" },
+            { "id": "s5", "name": "ass", "type": "string", "value": "={{ $('Build Subtitles').item.json.ass_path }}" }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": { "main": [[{ "node": "Read Subtitle Config", "type": "main", "index": 0 }]] },
+    "Read Subtitle Config": { "main": [[{ "node": "Extract Subtitle Config", "type": "main", "index": 0 }]] },
+    "Extract Subtitle Config": { "main": [[{ "node": "Read Story Log", "type": "main", "index": 0 }]] },
+    "Read Story Log": { "main": [[{ "node": "Extract Story Log", "type": "main", "index": 0 }]] },
+    "Extract Story Log": { "main": [[{ "node": "Pick Latest Story", "type": "main", "index": 0 }]] },
+    "Pick Latest Story": { "main": [[{ "node": "Read Scenes File", "type": "main", "index": 0 }]] },
+    "Read Scenes File": { "main": [[{ "node": "Extract Scenes", "type": "main", "index": 0 }]] },
+    "Extract Scenes": { "main": [[{ "node": "Read Audio Manifest", "type": "main", "index": 0 }]] },
+    "Read Audio Manifest": { "main": [[{ "node": "Extract Audio Manifest", "type": "main", "index": 0 }]] },
+    "Extract Audio Manifest": { "main": [[{ "node": "Build Subtitles", "type": "main", "index": 0 }]] },
+    "Build Subtitles": { "main": [[{ "node": "SRT to Binary", "type": "main", "index": 0 }]] },
+    "SRT to Binary": { "main": [[{ "node": "Write SRT", "type": "main", "index": 0 }]] },
+    "Write SRT": { "main": [[{ "node": "Prep ASS", "type": "main", "index": 0 }]] },
+    "Prep ASS": { "main": [[{ "node": "ASS to Binary", "type": "main", "index": 0 }]] },
+    "ASS to Binary": { "main": [[{ "node": "Write ASS", "type": "main", "index": 0 }]] },
+    "Write ASS": { "main": [[{ "node": "Summary", "type": "main", "index": 0 }]] }
+  }
+}

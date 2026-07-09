@@ -1,0 +1,7 @@
+{
+  "_comment": "Image generation settings. max_scenes: 0 = all scenes; set a small number to test cheaply first. image_model 'gemini-3.1-flash-image' is Nano Banana (paid tier).",
+  "image_model": "gemini-3.1-flash-image",
+  "aspect_ratio": "16:9",
+  "output_ext": "jpg",
+  "max_scenes": 0
+}
