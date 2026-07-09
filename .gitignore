@@ -24,9 +24,6 @@ logs/*
 !logs/.gitkeep
 !logs/story-log.json
 
-# ===== Dashboard (its own repo + Vercel) =====
-dashboard/
-
 # ===== Node / build junk =====
 node_modules/
 .next/
