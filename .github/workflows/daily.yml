@@ -32,6 +32,13 @@ jobs:
             output/stories output/scenes output/flow output/flow_in output/images \
             output/audio output/subtitles output/thumbnails output/videos output/seo \
             output/_tts_jobs output/_render_jobs logs assets/music
+          # The n8n container runs as uid 1000 (the `node` user), but these
+          # bind-mounted dirs are created by the runner user (uid 1001), so n8n
+          # can't write its outputs -> EACCES on /data/output/... and
+          # /data/logs/story-log.json. (Works locally only because Docker Desktop
+          # ignores uid perms on Windows bind mounts.) Hand the writable trees to
+          # uid 1000. chown leaves file modes intact, so no git-diff noise.
+          sudo chown -R 1000:1000 output logs
           # Credentials are imported from a DECRYPTED export (see .secrets guide),
           # so the encryption key no longer has to match anything: import
           # re-encrypts with whatever key this ephemeral runner uses, and the key
