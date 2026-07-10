@@ -175,9 +175,12 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.body) }}",
         "options": {
-          "timeout": 120000
+          "timeout": 300000
         }
       },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 4000,
       "credentials": {
         "googlePalmApi": {
           "id": "aiytGeminiCred001",

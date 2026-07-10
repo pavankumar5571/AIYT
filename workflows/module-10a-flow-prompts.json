@@ -146,7 +146,7 @@
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($json.body) }}",
         "options": {
-          "timeout": 120000
+          "timeout": 300000
         }
       },
       "retryOnFail": true,
