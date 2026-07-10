@@ -41,7 +41,11 @@ n8n_run aiytM11Thumb0001 "11 thumbnail"
 n8n_run aiytM12SEO0001   "12 seo"
 
 echo "[13 upload] start"
-UP=$(docker exec -e $BROKER aiyt_n8n n8n execute --id aiytM13Upload001 2>&1)
+# Capture with explicit failure handling: under `set -e`, a bare UP=$(...) would
+# abort silently on upload failure with the error trapped in $UP but never shown.
+if ! UP=$(docker exec -e $BROKER aiyt_n8n n8n execute --id aiytM13Upload001 2>&1); then
+  echo "[13 upload] FAILED:"; printf '%s\n' "$UP"; exit 1
+fi
 URL=$(printf '%s' "$UP" | grep -oE 'https://youtu\.be/[A-Za-z0-9_-]+' | head -1 || true)
 VID="${URL##*/}"
 echo "[13 upload] ok  ${URL:-<no url parsed>}"
