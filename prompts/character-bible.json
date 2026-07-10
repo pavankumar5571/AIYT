@@ -32,8 +32,8 @@
       "description": "Ages 3, energetic, a little flighty, very loyal, easily scared but always there for Barnaby. Voice: Chirpy, fast-paced, sometimes a little squeaky when worried. Greatest strength: Quick-thinking, fast flyer, good lookout. Biggest weakness: Jumpy, tends to panic.",
       "visual_description": "A small, bright-red robin with a puffed-out chest, sleek dark wings, and very alert, sparkling black eyes. Always seems to be mid-flutter or perched precariously. Default expression: Alert and slightly perky.",
       "first_seen": "2026-07-10_barnaby-and-the-gloomwood-s-secret-heart",
-      "last_seen": "2026-07-10_barnaby-and-the-gloomwood-s-secret-heart",
-      "times_seen": 1
+      "last_seen": "2026-07-10_pip-and-the-great-twisting-vine",
+      "times_seen": 2
     },
     "remy": {
       "name": "Remy",
@@ -57,6 +57,22 @@
       "visual_description": "A sleek, medium-sized crow with glossy, iridescent black feathers that shimmer with hints of deep purple and green in the sunlight. His sharp, intelligent eyes are a piercing, dark black. He often cocks his head, looking smug or calculating. One feather on his left wing is slightly ruffled, giving him a distinctive, rakish look.",
       "first_seen": "2026-07-10_remy-and-the-whispering-acorn-s-glow",
       "last_seen": "2026-07-10_remy-and-the-whispering-acorn-s-glow",
+      "times_seen": 1
+    },
+    "flicker": {
+      "name": "Flicker",
+      "description": "Age: A bit older than Pip (perhaps 8-10 in human years). Personality: Energetic, brave, fast, a little bit sassy and impatient, but deeply kind and encouraging. He doesn't understand fear easily because he flies everywhere. Voice: Zippy, high-pitched, quick, sometimes a little chittery with excitement. Greatest strength: Speed, fearlessness, loyalty, and an infectious positive outlook. Biggest weakness: A little bit reckless, sometimes forgets not everyone is as brave as he is.",
+      "visual_description": "A small, iridescent green hummingbird with a sapphire-blue head and a ruby-red throat patch that shimmers brilliantly in the sunlight. He is always zipping, even when hovering in place, his wings a blur. He has a long, delicate black beak and bright, quick-darting black eyes that miss nothing.",
+      "first_seen": "2026-07-10_pip-and-the-great-twisting-vine",
+      "last_seen": "2026-07-10_pip-and-the-great-twisting-vine",
+      "times_seen": 1
+    },
+    "bartholomew": {
+      "name": "Bartholomew",
+      "description": "Age: Young (a clumsy toddler bear). Personality: Playful, curious, gentle giant, completely unaware of his size or strength. Voice: Deep, rumbling growls and happy 'huffs' when playing. Greatest strength: Enormous strength, good-natured. Biggest weakness: Clumsiness, easily distracted by fun.",
+      "visual_description": "A large, shaggy, honey-brown bear cub with enormous, floppy ears and big, curious black eyes. He has a perpetually joyful, slightly goofy expression and a short, stubby tail that wags when he's excited. His paws are comically oversized, and he often trips over them.",
+      "first_seen": "2026-07-10_pip-and-the-great-twisting-vine",
+      "last_seen": "2026-07-10_pip-and-the-great-twisting-vine",
       "times_seen": 1
     }
   }
