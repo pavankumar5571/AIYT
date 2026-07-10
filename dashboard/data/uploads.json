@@ -1,17 +1,24 @@
 {
-    "_comment":  "Upload results are not persisted to disk by Module 13, so record them here (id -\u003e details). The collector merges this into builds.json.",
-    "2026-07-08_mimi-s-slow-ride-to-the-sweet-plums":  {
-                                                           "uploaded":  true,
-                                                           "video_id":  "EvaGPk7_lnc",
-                                                           "url":  "https://youtu.be/EvaGPk7_lnc",
-                                                           "privacy":  "private",
-                                                           "uploaded_at":  "2026-07-09T13:58:00Z"
-                                                       },
-    "2026-07-09_the-mystery-of-the-missing-sparkle":  {
-                                                          "uploaded":  true,
-                                                          "video_id":  "ABMlGw8Bj6U",
-                                                          "url":  "https://youtu.be/ABMlGw8Bj6U",
-                                                          "privacy":  "private",
-                                                          "uploaded_at":  "2026-07-09T11:44:43"
-                                                      }
+  "_comment": "Upload results are not persisted to disk by Module 13, so record them here (id -> details). The collector merges this into builds.json.",
+  "2026-07-08_mimi-s-slow-ride-to-the-sweet-plums": {
+    "uploaded": true,
+    "video_id": "EvaGPk7_lnc",
+    "url": "https://youtu.be/EvaGPk7_lnc",
+    "privacy": "private",
+    "uploaded_at": "2026-07-09T13:58:00Z"
+  },
+  "2026-07-09_the-mystery-of-the-missing-sparkle": {
+    "uploaded": true,
+    "video_id": "ABMlGw8Bj6U",
+    "url": "https://youtu.be/ABMlGw8Bj6U",
+    "privacy": "private",
+    "uploaded_at": "2026-07-09T11:44:43"
+  },
+  "2026-07-10_remy-and-the-whispering-acorn-s-glow": {
+    "uploaded": true,
+    "video_id": "r-m61X1p7nk",
+    "url": "https://youtu.be/r-m61X1p7nk",
+    "privacy": "private",
+    "uploaded_at": "2026-07-10T08:02:58.564Z"
+  }
 }

@@ -34,6 +34,30 @@
       "first_seen": "2026-07-10_barnaby-and-the-gloomwood-s-secret-heart",
       "last_seen": "2026-07-10_barnaby-and-the-gloomwood-s-secret-heart",
       "times_seen": 1
+    },
+    "remy": {
+      "name": "Remy",
+      "description": "Age: 6 (fox years). Personality: Incredibly curious, a bit clumsy, sweet-natured, and eager to explore. Voice style: Soft, slightly high-pitched, often filled with wonder and a touch of nervous excitement. Greatest strength: His boundless curiosity and kindness. Biggest weakness: Impulsiveness and a tendency to jump into things without fully thinking them through.",
+      "visual_description": "A small, lean fox kit with bright, fiery orange-red fur, a creamy white belly, and a fluffy white-tipped tail. His ears are tipped with dark brown, and his large, intelligent amber eyes are always wide with curiosity. He wears a tiny, faded sky-blue bandana loosely tied around his neck, and his default expression is one of innocent wonder.",
+      "first_seen": "2026-07-10_remy-and-the-whispering-acorn-s-glow",
+      "last_seen": "2026-07-10_remy-and-the-whispering-acorn-s-glow",
+      "times_seen": 1
+    },
+    "squeaky": {
+      "name": "Squeaky",
+      "description": "Age: 70 (squirrel years). Personality: Grumpy but secretly kind-hearted, very organized, easily flustered by chaos, but fiercely loyal. Voice style: A rapid, slightly raspy chitter, full of exasperation but with warmth underneath. Greatest strength: His wisdom and practical problem-solving skills. Biggest weakness: His inability to tolerate disorder and his tendency to worry too much.",
+      "visual_description": "A plump, elderly grey squirrel with wise, beady black eyes and a bushy, silver-tipped tail. He has a few grey whiskers poking out from his snout and a perpetually slightly concerned or exasperated frown. He carries a tiny, intricately carved wooden satchel over his shoulder, filled with his most prized acorns and found trinkets.",
+      "first_seen": "2026-07-10_remy-and-the-whispering-acorn-s-glow",
+      "last_seen": "2026-07-10_remy-and-the-whispering-acorn-s-glow",
+      "times_seen": 1
+    },
+    "corvus": {
+      "name": "Corvus",
+      "description": "Age: 10 (crow years). Personality: Mischievous, cunning, obsessed with shiny objects, and a bit of a trickster. Voice style: A deep, resonant 'caw' that can range from playful to surprisingly smooth when he's trying to be persuasive. Greatest strength: His quick thinking and ability to spot valuable things. Biggest weakness: His insatiable greed for all things shiny and his underestimation of others.",
+      "visual_description": "A sleek, medium-sized crow with glossy, iridescent black feathers that shimmer with hints of deep purple and green in the sunlight. His sharp, intelligent eyes are a piercing, dark black. He often cocks his head, looking smug or calculating. One feather on his left wing is slightly ruffled, giving him a distinctive, rakish look.",
+      "first_seen": "2026-07-10_remy-and-the-whispering-acorn-s-glow",
+      "last_seen": "2026-07-10_remy-and-the-whispering-acorn-s-glow",
+      "times_seen": 1
     }
   }
 }

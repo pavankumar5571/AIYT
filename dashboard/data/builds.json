@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-09T19:23:25.492Z",
+  "generated_at": "2026-07-10T08:02:59.390Z",
   "pricing": {
     "gemini_text_in_per_1m": 0.3,
     "gemini_text_out_per_1m": 2.5,
@@ -8,14 +8,199 @@
     "_note": "Actual pipeline cost is $0 (Gemini free tier, edge-tts, local FFmpeg). equivalent_usd = estimated cost on paid APIs, for reference only."
   },
   "totals": {
-    "builds": 3,
-    "uploaded": 2,
-    "videos": 2,
-    "total_minutes": 12.7,
+    "builds": 4,
+    "uploaded": 3,
+    "videos": 3,
+    "total_minutes": 21.9,
     "actual_usd": 0,
-    "equivalent_usd": 2.2396
+    "equivalent_usd": 4.4261
   },
   "builds": [
+    {
+      "id": "2026-07-10_remy-and-the-whispering-acorn-s-glow",
+      "title": "Remy and the Whispering Acorn's Glow",
+      "date": "2026-07-10",
+      "theme": "a magical object found in an ordinary place",
+      "moral": "True power comes from understanding and using our gifts thoughtfully, not just for ourselves.",
+      "status": "complete",
+      "progress": {
+        "done": 12,
+        "total": 12
+      },
+      "scene_count": 48,
+      "word_count": 1285,
+      "video": {
+        "has_final": true,
+        "size_mb": 182.6,
+        "resolution": "1920×1080",
+        "duration_seconds": 546.88,
+        "source": "stills slideshow"
+      },
+      "upload": {
+        "uploaded": true,
+        "url": "https://youtu.be/r-m61X1p7nk",
+        "video_id": "r-m61X1p7nk",
+        "privacy": "private"
+      },
+      "meta": {
+        "text_model": "gemini-2.5-flash",
+        "voice": "en-US-JennyNeural",
+        "tts_engine": "edge-tts"
+      },
+      "steps": [
+        {
+          "key": "story",
+          "module": "04",
+          "label": "Story",
+          "engine": "Gemini 2.5 Flash",
+          "status": "done",
+          "detail": "1285 words"
+        },
+        {
+          "key": "characters",
+          "module": "06",
+          "label": "Character Memory",
+          "engine": "Gemini 2.5 Flash",
+          "status": "done",
+          "detail": "Remy, Squeaky, Corvus"
+        },
+        {
+          "key": "scenes",
+          "module": "05",
+          "label": "Scene Breakdown",
+          "engine": "Gemini 2.5 Flash",
+          "status": "done",
+          "detail": "48 scenes"
+        },
+        {
+          "key": "prompts",
+          "module": "10a",
+          "label": "Cinematic Prompts",
+          "engine": "Gemini 2.5 Flash",
+          "status": "done",
+          "detail": "48 shots"
+        },
+        {
+          "key": "images",
+          "module": "07",
+          "label": "Scene Images",
+          "engine": "Gemini Image",
+          "status": "done",
+          "detail": "48/48"
+        },
+        {
+          "key": "narration",
+          "module": "08",
+          "label": "Narration (TTS)",
+          "engine": "edge-tts",
+          "status": "done",
+          "detail": "48 clips · 9m 7s"
+        },
+        {
+          "key": "subtitles",
+          "module": "09",
+          "label": "Subtitles",
+          "engine": "local",
+          "status": "done",
+          "detail": ""
+        },
+        {
+          "key": "slideshow",
+          "module": "10",
+          "label": "Slideshow (Ken Burns)",
+          "engine": "FFmpeg",
+          "status": "done",
+          "detail": ""
+        },
+        {
+          "key": "assemble",
+          "module": "10b",
+          "label": "Assemble Video",
+          "engine": "FFmpeg",
+          "status": "done",
+          "detail": "182.6 MB"
+        },
+        {
+          "key": "thumbnail",
+          "module": "11",
+          "label": "Thumbnail",
+          "engine": "Gemini Image",
+          "status": "done",
+          "detail": ""
+        },
+        {
+          "key": "seo",
+          "module": "12",
+          "label": "SEO Metadata",
+          "engine": "Gemini 2.5 Flash",
+          "status": "done",
+          "detail": "title · desc · tags"
+        },
+        {
+          "key": "upload",
+          "module": "13",
+          "label": "YouTube Upload",
+          "engine": "YouTube API",
+          "status": "done",
+          "detail": "private"
+        }
+      ],
+      "cost": {
+        "actual_usd": 0,
+        "equivalent_usd": 2.1865,
+        "breakdown": [
+          {
+            "step": "story",
+            "label": "Story generation",
+            "actual_usd": 0,
+            "equivalent_usd": 0.0067,
+            "detail": "~1943 output tokens"
+          },
+          {
+            "step": "scenes",
+            "label": "Scene breakdown",
+            "actual_usd": 0,
+            "equivalent_usd": 0.0538,
+            "detail": "48 scenes"
+          },
+          {
+            "step": "prompts",
+            "label": "Cinematic prompts",
+            "actual_usd": 0,
+            "equivalent_usd": 0.0418,
+            "detail": "48 shots"
+          },
+          {
+            "step": "images",
+            "label": "Scene images",
+            "actual_usd": 0,
+            "equivalent_usd": 1.92,
+            "detail": "48 × $0.04"
+          },
+          {
+            "step": "narration",
+            "label": "Narration — edge-tts is FREE",
+            "actual_usd": 0,
+            "equivalent_usd": 0.1224,
+            "detail": "7,648 chars"
+          },
+          {
+            "step": "thumbnail",
+            "label": "Thumbnail image",
+            "actual_usd": 0,
+            "equivalent_usd": 0.04,
+            "detail": "1 image"
+          },
+          {
+            "step": "seo",
+            "label": "SEO metadata",
+            "actual_usd": 0,
+            "equivalent_usd": 0.0018,
+            "detail": "title / description / tags"
+          }
+        ]
+      }
+    },
     {
       "id": "2026-07-09_the-mystery-of-the-missing-sparkle",
       "title": "The Mystery of the Missing Sparkle!",
