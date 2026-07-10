@@ -5,8 +5,20 @@
 set -euo pipefail
 BROKER="N8N_RUNNERS_BROKER_PORT=5693"
 
-n8n_run()  { echo "[$2] start"; docker exec -e $BROKER aiyt_n8n n8n execute --id "$1" >/dev/null; echo "[$2] ok"; }
-work_run() { echo "[$3] start"; docker exec "$1" sh -c "$2" >/dev/null; echo "[$3] ok"; }
+n8n_run()  {
+  echo "[$2] start"
+  if ! out=$(docker exec -e $BROKER aiyt_n8n n8n execute --id "$1" 2>&1); then
+    echo "[$2] FAILED (id=$1):"; printf '%s\n' "$out"; exit 1
+  fi
+  echo "[$2] ok"
+}
+work_run() {
+  echo "[$3] start"
+  if ! out=$(docker exec "$1" sh -c "$2" 2>&1); then
+    echo "[$3] FAILED (container=$1): $2"; printf '%s\n' "$out"; exit 1
+  fi
+  echo "[$3] ok"
+}
 
 # 1) Story + assets (each module reads the latest story from the DB/log)
 n8n_run aiytM4StoryGen001   "04 story"
