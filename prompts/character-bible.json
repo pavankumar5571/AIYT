@@ -1,25 +1,39 @@
-﻿{
-    "_comment":  "Persistent character memory for Boopaloo Kids. recurring_characters = manually pinned characters (e.g. a channel mascot) that must look IDENTICAL in every episode; they always override a story\u0027s version. registry = auto-maintained by Module 6: it remembers every character ever generated so a re-used name keeps its original look across episodes. To make a recurring character actually APPEAR in new stories, also add its name to the Module 4 story prompt.",
-    "art_style_reference":  "Cinematic children\u0027s storybook illustration, soft painterly digital art, warm golden lighting. Keep this in sync with prompts/scene-config.json -\u003e image_style so every episode shares one look.",
-    "recurring_characters":  {
-
-                             },
-    "registry":  {
-                     "mimi":  {
-                                  "name":  "Mimi",
-                                  "description":  "A tiny, energetic desert jerboa who loves to zoom and hop.",
-                                  "visual_description":  "A palm-sized, creamy-yellow jerboa with giant, round black eyes, long tufted ears like bunny ears, extremely long springy back legs, and a tiny pink nose. She wears a little cherry-red backpack made of a flower petal.",
-                                  "first_seen":  "2026-07-08_mimi-s-slow-ride-to-the-sweet-plums",
-                                  "last_seen":  "2026-07-08_mimi-s-slow-ride-to-the-sweet-plums",
-                                  "times_seen":  1
-                              },
-                     "barnaby":  {
-                                     "name":  "Barnaby",
-                                     "description":  "A wise, slow-moving giant desert tortoise who loves quiet moments.",
-                                     "visual_description":  "A large, dome-shelled tortoise with dusty-green skin, gentle wrinkled eyes, and a shell painted with tiny, colorful wildflower patterns. He wears a small, straw sunhat tied under his chin with a green ribbon.",
-                                     "first_seen":  "2026-07-08_mimi-s-slow-ride-to-the-sweet-plums",
-                                     "last_seen":  "2026-07-08_mimi-s-slow-ride-to-the-sweet-plums",
-                                     "times_seen":  1
-                                 }
-                 }
+{
+  "_comment": "Persistent character memory for Boopaloo Kids. recurring_characters = manually pinned characters (e.g. a channel mascot) that must look IDENTICAL in every episode; they always override a story's version. registry = auto-maintained by Module 6: it remembers every character ever generated so a re-used name keeps its original look across episodes. To make a recurring character actually APPEAR in new stories, also add its name to the Module 4 story prompt.",
+  "art_style_reference": "Cinematic children's storybook illustration, soft painterly digital art, warm golden lighting. Keep this in sync with prompts/scene-config.json -> image_style so every episode shares one look.",
+  "recurring_characters": {},
+  "registry": {
+    "mimi": {
+      "name": "Mimi",
+      "description": "A tiny, energetic desert jerboa who loves to zoom and hop.",
+      "visual_description": "A palm-sized, creamy-yellow jerboa with giant, round black eyes, long tufted ears like bunny ears, extremely long springy back legs, and a tiny pink nose. She wears a little cherry-red backpack made of a flower petal.",
+      "first_seen": "2026-07-08_mimi-s-slow-ride-to-the-sweet-plums",
+      "last_seen": "2026-07-08_mimi-s-slow-ride-to-the-sweet-plums",
+      "times_seen": 1
+    },
+    "barnaby": {
+      "name": "Barnaby",
+      "description": "A wise, slow-moving giant desert tortoise who loves quiet moments.",
+      "visual_description": "A large, dome-shelled tortoise with dusty-green skin, gentle wrinkled eyes, and a shell painted with tiny, colorful wildflower patterns. He wears a small, straw sunhat tied under his chin with a green ribbon.",
+      "first_seen": "2026-07-08_mimi-s-slow-ride-to-the-sweet-plums",
+      "last_seen": "2026-07-10_barnaby-and-the-gloomwood-s-secret-heart",
+      "times_seen": 2
+    },
+    "grumbleleaf": {
+      "name": "Grumbleleaf",
+      "description": "Ages ancient, appears grumpy and intimidating due to its towering size and solemn demeanor, but is actually deeply gentle, lonely, and anxious about its task. Voice: Deep, rumbling, slow, but with a surprising gentleness when calm. Greatest strength: Immense physical presence, deep wisdom about the forest, unwavering dedication to its duty. Biggest weakness: Misunderstood, easily startled, very shy, slow to trust.",
+      "visual_description": "A towering, moss-covered creature, shaped like a giant, ancient oak with gnarled branches for arms and legs, glowing green eyes hidden deep within its leafy cowl, roots for feet. Its 'skin' is rough bark, and vibrant green moss and tiny glowing mushrooms grow all over it. It carries a staff made from a twisted branch. Default expression: Stoic, slightly furrowed 'brow' of leaves.",
+      "first_seen": "2026-07-10_barnaby-and-the-gloomwood-s-secret-heart",
+      "last_seen": "2026-07-10_barnaby-and-the-gloomwood-s-secret-heart",
+      "times_seen": 1
+    },
+    "pip": {
+      "name": "Pip",
+      "description": "Ages 3, energetic, a little flighty, very loyal, easily scared but always there for Barnaby. Voice: Chirpy, fast-paced, sometimes a little squeaky when worried. Greatest strength: Quick-thinking, fast flyer, good lookout. Biggest weakness: Jumpy, tends to panic.",
+      "visual_description": "A small, bright-red robin with a puffed-out chest, sleek dark wings, and very alert, sparkling black eyes. Always seems to be mid-flutter or perched precariously. Default expression: Alert and slightly perky.",
+      "first_seen": "2026-07-10_barnaby-and-the-gloomwood-s-secret-heart",
+      "last_seen": "2026-07-10_barnaby-and-the-gloomwood-s-secret-heart",
+      "times_seen": 1
+    }
+  }
 }
