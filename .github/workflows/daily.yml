@@ -44,11 +44,19 @@ jobs:
 
       - name: Wait for n8n to be ready
         run: |
+          # Poll n8n's HTTP readiness endpoint (200 only AFTER migrations complete).
+          # Do NOT probe with `n8n list:workflow`: that CLI command boots a second
+          # n8n instance which runs DB migrations concurrently with the main
+          # process. On a fresh database the two race the initial migration and
+          # crash it ("duplicate key ... pg_type_typname_nsp_index" on
+          # webhook_entity), which then breaks Module 04. curl never touches the DB.
           for i in $(seq 1 90); do
-            if docker exec aiyt_n8n n8n list:workflow >/dev/null 2>&1; then echo "n8n ready"; exit 0; fi
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5678/healthz/readiness || true)
+            if [ "$code" = "200" ]; then echo "n8n ready"; exit 0; fi
             sleep 3
           done
-          echo "n8n did not become ready"; docker compose -f docker/docker-compose.yml logs --tail=120; exit 1
+          echo "n8n did not become ready (last code=${code:-none})"
+          docker compose -f docker/docker-compose.yml logs --tail=120; exit 1
 
       - name: Import workflows + credentials
         env:
