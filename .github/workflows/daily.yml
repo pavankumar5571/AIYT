@@ -25,18 +25,26 @@ jobs:
       - uses: actions/checkout@v5
 
       - name: Prepare env + output dirs
+        env:
+          ENC_KEY: ${{ secrets.N8N_ENCRYPTION_KEY }}
         run: |
           mkdir -p \
             output/stories output/scenes output/flow output/flow_in output/images \
             output/audio output/subtitles output/thumbnails output/videos output/seo \
             output/_tts_jobs output/_render_jobs logs assets/music
+          # Credentials are imported from a DECRYPTED export (see .secrets guide),
+          # so the encryption key no longer has to match anything: import
+          # re-encrypts with whatever key this ephemeral runner uses, and the key
+          # is discarded when the runner is destroyed. Generate one if the secret
+          # is unset so a missing/wrong N8N_ENCRYPTION_KEY can't fail the run.
+          KEY="${ENC_KEY:-$(openssl rand -hex 16)}"
           cat > .env <<EOF
           POSTGRES_USER=n8n
           POSTGRES_PASSWORD=ci_$(date +%s)
           POSTGRES_DB=n8n
           N8N_HOST=localhost
           GENERIC_TIMEZONE=UTC
-          N8N_ENCRYPTION_KEY=${{ secrets.N8N_ENCRYPTION_KEY }}
+          N8N_ENCRYPTION_KEY=$KEY
           EOF
 
       - name: Build + start stack
