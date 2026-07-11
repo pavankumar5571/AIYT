@@ -16,8 +16,8 @@
       "description": "A wise, slow-moving giant desert tortoise who loves quiet moments.",
       "visual_description": "A large, dome-shelled tortoise with dusty-green skin, gentle wrinkled eyes, and a shell painted with tiny, colorful wildflower patterns. He wears a small, straw sunhat tied under his chin with a green ribbon.",
       "first_seen": "2026-07-08_mimi-s-slow-ride-to-the-sweet-plums",
-      "last_seen": "2026-07-10_barnaby-and-the-gloomwood-s-secret-heart",
-      "times_seen": 2
+      "last_seen": "2026-07-11_barnaby-and-the-rainbow-s-nap",
+      "times_seen": 3
     },
     "grumbleleaf": {
       "name": "Grumbleleaf",
@@ -73,6 +73,14 @@
       "visual_description": "A large, shaggy, honey-brown bear cub with enormous, floppy ears and big, curious black eyes. He has a perpetually joyful, slightly goofy expression and a short, stubby tail that wags when he's excited. His paws are comically oversized, and he often trips over them.",
       "first_seen": "2026-07-10_pip-and-the-great-twisting-vine",
       "last_seen": "2026-07-10_pip-and-the-great-twisting-vine",
+      "times_seen": 1
+    },
+    "pippin": {
+      "name": "Pippin",
+      "description": "6 years old, energetic, chatty, loves adventure and anything shiny. Voice: Quick, bright, slightly squawky. Greatest strength: Resourceful, observant, and surprisingly brave. Biggest weakness: Impulsive, gets easily distracted by glittery things, and can sometimes be a bit bossy.",
+      "visual_description": "A sleek magpie with iridescent blue-black feathers that shimmer green and purple in the light, a bright white belly, and long, elegant tail feathers. She wears a tiny, tarnished silver thimble on her head like a precious crown. Her default expression is alert, curious, and a little mischievous.",
+      "first_seen": "2026-07-11_barnaby-and-the-rainbow-s-nap",
+      "last_seen": "2026-07-11_barnaby-and-the-rainbow-s-nap",
       "times_seen": 1
     }
   }
