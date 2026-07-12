@@ -40,16 +40,16 @@
       "description": "Age: 6 (fox years). Personality: Incredibly curious, a bit clumsy, sweet-natured, and eager to explore. Voice style: Soft, slightly high-pitched, often filled with wonder and a touch of nervous excitement. Greatest strength: His boundless curiosity and kindness. Biggest weakness: Impulsiveness and a tendency to jump into things without fully thinking them through.",
       "visual_description": "A small, lean fox kit with bright, fiery orange-red fur, a creamy white belly, and a fluffy white-tipped tail. His ears are tipped with dark brown, and his large, intelligent amber eyes are always wide with curiosity. He wears a tiny, faded sky-blue bandana loosely tied around his neck, and his default expression is one of innocent wonder.",
       "first_seen": "2026-07-10_remy-and-the-whispering-acorn-s-glow",
-      "last_seen": "2026-07-10_remy-and-the-whispering-acorn-s-glow",
-      "times_seen": 1
+      "last_seen": "2026-07-12_remy-and-the-moonpetal-secret",
+      "times_seen": 2
     },
     "squeaky": {
       "name": "Squeaky",
       "description": "Age: 70 (squirrel years). Personality: Grumpy but secretly kind-hearted, very organized, easily flustered by chaos, but fiercely loyal. Voice style: A rapid, slightly raspy chitter, full of exasperation but with warmth underneath. Greatest strength: His wisdom and practical problem-solving skills. Biggest weakness: His inability to tolerate disorder and his tendency to worry too much.",
       "visual_description": "A plump, elderly grey squirrel with wise, beady black eyes and a bushy, silver-tipped tail. He has a few grey whiskers poking out from his snout and a perpetually slightly concerned or exasperated frown. He carries a tiny, intricately carved wooden satchel over his shoulder, filled with his most prized acorns and found trinkets.",
       "first_seen": "2026-07-10_remy-and-the-whispering-acorn-s-glow",
-      "last_seen": "2026-07-10_remy-and-the-whispering-acorn-s-glow",
-      "times_seen": 1
+      "last_seen": "2026-07-12_remy-and-the-moonpetal-secret",
+      "times_seen": 2
     },
     "corvus": {
       "name": "Corvus",
@@ -81,6 +81,14 @@
       "visual_description": "A sleek magpie with iridescent blue-black feathers that shimmer green and purple in the light, a bright white belly, and long, elegant tail feathers. She wears a tiny, tarnished silver thimble on her head like a precious crown. Her default expression is alert, curious, and a little mischievous.",
       "first_seen": "2026-07-11_barnaby-and-the-rainbow-s-nap",
       "last_seen": "2026-07-11_barnaby-and-the-rainbow-s-nap",
+      "times_seen": 1
+    },
+    "professor hoot": {
+      "name": "Professor Hoot",
+      "description": "Ageless (wise elder). A venerable, wise barn owl, revered for his knowledge of ancient traditions and forest lore. He is stern but fair, valuing honesty and integrity above all. His greatest strength is his wisdom and calm demeanor; his biggest weakness is his initial formality, which can sometimes make him seem unapproachable.",
+      "visual_description": "A large, dignified barn owl with magnificent, soft cream and brown feathers, piercing golden eyes that observe everything, and a tall, pointed scholarly hat perched elegantly on his head. He often holds a gnarled, polished branch as a walking stick. His default expression is thoughtful and slightly stern.",
+      "first_seen": "2026-07-12_remy-and-the-moonpetal-secret",
+      "last_seen": "2026-07-12_remy-and-the-moonpetal-secret",
       "times_seen": 1
     }
   }

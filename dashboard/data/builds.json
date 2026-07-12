@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-10T08:02:59.390Z",
+  "generated_at": "2026-07-12T09:23:49.141Z",
   "pricing": {
     "gemini_text_in_per_1m": 0.3,
     "gemini_text_out_per_1m": 2.5,
@@ -8,14 +8,199 @@
     "_note": "Actual pipeline cost is $0 (Gemini free tier, edge-tts, local FFmpeg). equivalent_usd = estimated cost on paid APIs, for reference only."
   },
   "totals": {
-    "builds": 4,
-    "uploaded": 3,
-    "videos": 3,
-    "total_minutes": 21.9,
+    "builds": 5,
+    "uploaded": 4,
+    "videos": 4,
+    "total_minutes": 34.2,
     "actual_usd": 0,
-    "equivalent_usd": 4.4261
+    "equivalent_usd": 6.1295
   },
   "builds": [
+    {
+      "id": "2026-07-12_remy-and-the-moonpetal-secret",
+      "title": "Remy and the Moonpetal Secret",
+      "date": "2026-07-12",
+      "theme": "telling the truth even when it is hard",
+      "moral": "Telling the truth, even when it feels scary, is the bravest thing you can do, and it always leads to brighter outcomes.",
+      "status": "complete",
+      "progress": {
+        "done": 11,
+        "total": 12
+      },
+      "scene_count": 36,
+      "word_count": 1779,
+      "video": {
+        "has_final": true,
+        "size_mb": 186,
+        "resolution": "1920×1080",
+        "duration_seconds": 741.61,
+        "source": "stills slideshow"
+      },
+      "upload": {
+        "uploaded": true,
+        "url": "https://youtu.be/da8uCdzkWsQ",
+        "video_id": "da8uCdzkWsQ",
+        "privacy": "private"
+      },
+      "meta": {
+        "text_model": "gemini-2.5-flash",
+        "voice": "en-US-JennyNeural",
+        "tts_engine": "edge-tts"
+      },
+      "steps": [
+        {
+          "key": "story",
+          "module": "04",
+          "label": "Story",
+          "engine": "Gemini 2.5 Flash",
+          "status": "done",
+          "detail": "1779 words"
+        },
+        {
+          "key": "characters",
+          "module": "06",
+          "label": "Character Memory",
+          "engine": "Gemini 2.5 Flash",
+          "status": "done",
+          "detail": "Remy, Squeaky, Professor Hoot"
+        },
+        {
+          "key": "scenes",
+          "module": "05",
+          "label": "Scene Breakdown",
+          "engine": "Gemini 2.5 Flash",
+          "status": "done",
+          "detail": "36 scenes"
+        },
+        {
+          "key": "prompts",
+          "module": "10a",
+          "label": "Cinematic Prompts",
+          "engine": "Gemini 2.5 Flash",
+          "status": "done",
+          "detail": "36 shots"
+        },
+        {
+          "key": "images",
+          "module": "07",
+          "label": "Scene Images",
+          "engine": "Gemini Image",
+          "status": "partial",
+          "detail": "35/36"
+        },
+        {
+          "key": "narration",
+          "module": "08",
+          "label": "Narration (TTS)",
+          "engine": "edge-tts",
+          "status": "done",
+          "detail": "36 clips · 12m 22s"
+        },
+        {
+          "key": "subtitles",
+          "module": "09",
+          "label": "Subtitles",
+          "engine": "local",
+          "status": "done",
+          "detail": ""
+        },
+        {
+          "key": "slideshow",
+          "module": "10",
+          "label": "Slideshow (Ken Burns)",
+          "engine": "FFmpeg",
+          "status": "done",
+          "detail": ""
+        },
+        {
+          "key": "assemble",
+          "module": "10b",
+          "label": "Assemble Video",
+          "engine": "FFmpeg",
+          "status": "done",
+          "detail": "186 MB"
+        },
+        {
+          "key": "thumbnail",
+          "module": "11",
+          "label": "Thumbnail",
+          "engine": "Gemini Image",
+          "status": "done",
+          "detail": ""
+        },
+        {
+          "key": "seo",
+          "module": "12",
+          "label": "SEO Metadata",
+          "engine": "Gemini 2.5 Flash",
+          "status": "done",
+          "detail": "title · desc · tags"
+        },
+        {
+          "key": "upload",
+          "module": "13",
+          "label": "YouTube Upload",
+          "engine": "YouTube API",
+          "status": "done",
+          "detail": "private"
+        }
+      ],
+      "cost": {
+        "actual_usd": 0,
+        "equivalent_usd": 1.7034,
+        "breakdown": [
+          {
+            "step": "story",
+            "label": "Story generation",
+            "actual_usd": 0,
+            "equivalent_usd": 0.0083,
+            "detail": "~2604 output tokens"
+          },
+          {
+            "step": "scenes",
+            "label": "Scene breakdown",
+            "actual_usd": 0,
+            "equivalent_usd": 0.0476,
+            "detail": "36 scenes"
+          },
+          {
+            "step": "prompts",
+            "label": "Cinematic prompts",
+            "actual_usd": 0,
+            "equivalent_usd": 0.0398,
+            "detail": "36 shots"
+          },
+          {
+            "step": "images",
+            "label": "Scene images",
+            "actual_usd": 0,
+            "equivalent_usd": 1.4,
+            "detail": "35 × $0.04"
+          },
+          {
+            "step": "narration",
+            "label": "Narration — edge-tts is FREE",
+            "actual_usd": 0,
+            "equivalent_usd": 0.1657,
+            "detail": "10,355 chars"
+          },
+          {
+            "step": "thumbnail",
+            "label": "Thumbnail image",
+            "actual_usd": 0,
+            "equivalent_usd": 0.04,
+            "detail": "1 image"
+          },
+          {
+            "step": "seo",
+            "label": "SEO metadata",
+            "actual_usd": 0,
+            "equivalent_usd": 0.002,
+            "detail": "title / description / tags"
+          }
+        ]
+      }
+    },
     {
       "id": "2026-07-10_remy-and-the-whispering-acorn-s-glow",
       "title": "Remy and the Whispering Acorn's Glow",
