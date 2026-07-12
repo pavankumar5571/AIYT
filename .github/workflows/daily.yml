@@ -7,8 +7,9 @@ name: Daily AI-YouTube video
 
 on:
   workflow_dispatch: {}          # manual "Run workflow" button (use this to test)
-  schedule:
-    - cron: "0 7 * * *"          # 07:00 UTC daily
+  # Daily schedule disabled 2026-07-12; re-enable by restoring:
+  # schedule:
+  #   - cron: "0 7 * * *"        # 07:00 UTC daily
 
 permissions:
   contents: write                # to commit story-log.json back
