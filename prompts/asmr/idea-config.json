@@ -1,0 +1,37 @@
+{
+  "_comment": "Config for Module A01 (Idea/Concept) of the ASMR Papercut shorts brand. recurring_tools are ALWAYS reused across every video (the Asset Manager pins them, the model never reinvents them) — this is what makes the tools look identical every time. The model only invents the SUBJECT prop(s) + beats. subject_pool seeds variety; avoid_recent dedupes against output/asmr/ideas/used.json.",
+  "brand": "asmr_papercut",
+  "format": "short",
+  "text_model": "gemini-2.5-flash",
+  "max_duration_seconds": 60,
+  "target_scenes": 7,
+
+  "recurring_tools": [
+    {
+      "slug": "paper-hands",
+      "name": "Paper Hands",
+      "kind": "character",
+      "visual_description": "A gentle pair of cut-paper hands made of warm peach cardstock, with softly rounded fingers, subtle layered-paper knuckle creases, and clean matte knife-cut edges; they move slowly and calmly."
+    },
+    {
+      "slug": "craft-knife",
+      "name": "Craft Knife",
+      "kind": "prop",
+      "visual_description": "A small papercraft craft knife with a flat cut-paper silver blade and a pastel mint-green handle, crisp clean paper edges and a soft drop shadow."
+    },
+    {
+      "slug": "cutting-board",
+      "name": "Cutting Board",
+      "kind": "prop",
+      "visual_description": "A rounded rectangular cutting board built from layered kraft-paper woodgrain in warm honey-tan, with soft paper edge highlights and a gentle shadow beneath."
+    }
+  ],
+
+  "subject_pool": [
+    "rainbow layer cake", "watermelon slice", "strawberry shortcake", "kiwi fruit",
+    "ice cream sundae", "juicy orange", "sushi roll", "birthday cupcake", "ripe avocado",
+    "dragon fruit", "layered rainbow jelly", "cheese wheel", "glazed donut", "peach",
+    "chocolate layer bar", "stack of pancakes", "slice of pizza", "macaron tower"
+  ],
+  "avoid_recent": 20
+}

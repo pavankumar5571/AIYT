@@ -1,0 +1,25 @@
+{
+  "_comment": "Persistent, cross-brand ASSET LIBRARY registry. This is the source of truth for the 'generate once, reuse forever' rule. Each character/prop is generated ONCE (Nano Banana) as a canonical reference PNG saved under assets/library/<kind>/<slug>/canonical.png, then reused as the Veo start-frame ingredient in every future video (repositioned per scene, never regenerated). Module A02 (Asset Manager) reconciles a concept's needed assets against this file; Module A03 (Asset Generator) generates ONLY entries whose asset_status is 'missing', then flips them to 'ready' and sets asset_path. NEVER hand-edit an entry from 'ready' back to 'missing' unless you have deleted its PNG and truly want it regenerated. Slugs are lowercase-kebab and stable (they are the folder name).",
+
+  "art_styles": {
+    "asmr_papercut": "Handmade cut-paper / layered papercraft look. Every object is built from clean matte construction paper and cardstock with visible crisp knife-cut edges, gentle paper thickness and soft drop shadows between layers. Soft even studio softbox lighting from above, shallow cozy depth, pastel and warm candy color palette, seamless plain pastel paper backdrop, no photographic realism, no glossy 3D, no text or letters. Calm, satisfying, tactile ASMR mood.",
+    "rhyme": "Pixar-quality 3D animated film still, glossy rounded characters with soft subsurface skin, expressive faces, cinematic depth and lighting, lush detailed environments, warm rich color palette, wondrous and heartwarming mood. (Brand B — long-format rhymes, built later.)"
+  },
+
+  "_entry_schema": {
+    "slug": {
+      "name": "Human-readable name",
+      "kind": "character | prop",
+      "visual_description": "Full, fixed appearance — repeated verbatim wherever the asset is used so it stays identical across videos.",
+      "asset_path": "assets/library/<kind>/<slug>/canonical.png (null until generated)",
+      "asset_status": "missing | ready",
+      "brands": ["asmr_papercut"],
+      "first_seen": "YYYY-MM-DD_concept-id or null",
+      "last_seen": "YYYY-MM-DD_concept-id or null",
+      "times_seen": 0
+    }
+  },
+
+  "characters": {},
+  "props": {}
+}

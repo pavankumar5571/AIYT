@@ -1,0 +1,8 @@
+{
+  "_comment": "Config for Module A03 (Asset Generator). Generates a CANONICAL reference PNG for each library asset whose asset_status is 'missing', on a clean neutral background so it can be composited into scene start-frames later. Generates ONE image per asset, ONCE, then A02/A03 flip it to 'ready'. Never regenerates a 'ready' asset. image_model is Nano Banana (paid, ~$0.04/img) but this runs at most a handful of times per new asset, not per video.",
+  "image_model": "gemini-3.1-flash-image",
+  "canonical_aspect_ratio": "1:1",
+  "output_ext": "png",
+  "canonical_background": "Presented alone, centered and fully visible on a plain seamless soft-white paper studio background, even soft overhead lighting, no other objects, no human hands or skin, no text, no letters. Clearly handmade layered cut construction paper with crisp clean knife-cut edges and soft paper drop shadows.",
+  "only_generate_status": "missing"
+}

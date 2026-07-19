@@ -1,0 +1,13 @@
+{
+  "_comment": "Config for Module A06 (Start-frame + Veo video). VERIFY BEFORE FIRST PAID RUN: (1) the exact Veo model id available on this Gemini API key/project, (2) that billing on project ai-youtube-generator covers Veo, (3) the image-to-video request shape (the value below is a placeholder to confirm against the current Google GenAI docs at build time). tier 'fast' keeps per-second cost down; short-format only for now. 720p renders faster/cheaper and is upscaled to 1080x1920 at assemble.",
+  "video_model": "veo-3.1-fast-generate-preview",
+  "video_model_verified": false,
+  "tier": "fast",
+  "aspect_ratio": "9:16",
+  "resolution": "720p",
+  "clip_seconds": 8,
+  "negative_prompt": "text, letters, words, numbers, logos, human skin, human faces, glossy plastic, photorealistic, fast motion, camera shake, flicker",
+  "poll_seconds": 10,
+  "max_poll_minutes": 6,
+  "max_scenes": 0
+}

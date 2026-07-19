@@ -34,3 +34,10 @@ Thumbs.db
 desktop.ini
 .DS_Store
 
+# ===== Asset Library — canonical reusable assets MUST be versioned =====
+# (generate-once/reuse: the registry in prompts/ points at these PNGs, so they
+#  have to survive fresh clones + CI runners, unlike the disposable output/.)
+!assets/
+!assets/library/
+!assets/library/**
+

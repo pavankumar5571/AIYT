@@ -1,0 +1,8 @@
+{
+  "_comment": "Config for Module A04 (Storyboard). Splits a concept's satisfying_beats into fixed-length scenes, one Veo clip each. Hard duration cap enforced in the workflow: scenes * clip_seconds must be <= max_total_seconds (60). Each scene names which library assets are present and HOW they are positioned this scene (same assets, new position = the 'change position, don't regenerate' rule).",
+  "text_model": "gemini-2.5-flash",
+  "clip_seconds": 8,
+  "max_scenes": 7,
+  "max_total_seconds": 60,
+  "aspect_ratio": "9:16"
+}

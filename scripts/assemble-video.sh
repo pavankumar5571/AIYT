@@ -52,11 +52,19 @@ ffmpeg -y -loglevel error -f concat -safe 0 -i "$LIST" -c copy "$NARR"
 
 # 2. Final audio = narration (+ optional music ducked underneath).
 MUSIC="$(find "$MUSIC_DIR" -maxdepth 1 -type f \( -iname '*.mp3' -o -iname '*.wav' -o -iname '*.m4a' \) 2>/dev/null | head -n1 || true)"
+# Soft music-bed volume under the narration. 0.10 is sleep-friendly (barely there);
+# raise toward 0.15-0.18 for lively daytime stories. Override with the MUSIC_VOLUME env.
+MUSIC_VOLUME="${MUSIC_VOLUME:-0.10}"
 AUDIO="$WORK/audio.m4a"
 if [ -n "$MUSIC" ]; then
-  echo "Mixing background music: $(basename "$MUSIC")"
+  echo "Mixing background music: $(basename "$MUSIC")  (vol=$MUSIC_VOLUME)"
+  # Gently fade the looped music IN at the start and OUT at the very end so sleep
+  # stories begin and finish softly instead of cutting. Narration length drives the mix.
+  DUR="$(ffprobe -v error -show_entries format=duration -of csv=p=0 "$NARR" 2>/dev/null | cut -d. -f1)"
+  [ -n "$DUR" ] || DUR=0
+  if [ "$DUR" -gt 8 ]; then FOUT_ST=$((DUR - 6)); else FOUT_ST=0; fi
   ffmpeg -y -loglevel error -i "$NARR" -stream_loop -1 -i "$MUSIC" \
-    -filter_complex "[1:a]volume=0.12[m];[0:a][m]amix=inputs=2:duration=first:dropout_transition=0[a]" \
+    -filter_complex "[1:a]volume=${MUSIC_VOLUME},afade=t=in:st=0:d=3,afade=t=out:st=${FOUT_ST}:d=6[m];[0:a][m]amix=inputs=2:duration=first:dropout_transition=0[a]" \
     -map "[a]" -c:a aac -b:a 192k "$AUDIO"
 else
   echo "No background music (skipping)."

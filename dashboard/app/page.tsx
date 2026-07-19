@@ -1,16 +1,11 @@
 import Link from 'next/link';
-import { getBuildsFile, getStatus, timeAgo, money } from '@/lib/builds';
-import type { BuildStatus } from '@/lib/types';
+import { getBuildsFile, getStatus, timeAgo, money, boardColumns, brandOf, BRANDS } from '@/lib/builds';
 
-const statusLabel: Record<BuildStatus, string> = {
-  complete: 'Complete',
-  in_progress: 'In progress',
-  pending: 'Queued',
-};
-
-export default function Home() {
+export default function Home({ searchParams }: { searchParams?: { brand?: string } }) {
   const { totals, builds, generated_at } = getBuildsFile();
   const run = getStatus();
+  const brandFilter = searchParams?.brand;
+  const columns = boardColumns(builds, brandFilter);
 
   return (
     <main>
@@ -18,8 +13,8 @@ export default function Home() {
         <div className="brand">
           <div className="logo">🎬</div>
           <div>
-            <h1>AI-YouTube · Build Dashboard</h1>
-            <p>Progress &amp; cost of every AI-generated story video</p>
+            <h1>AI-YouTube · Production Board</h1>
+            <p>Every AI-generated video, tracked across the pipeline</p>
           </div>
         </div>
         <div className="run-status">
@@ -38,11 +33,11 @@ export default function Home() {
 
       <section className="stats">
         <div className="stat">
-          <div className="k">Stories</div>
+          <div className="k">Videos</div>
           <div className="v">{totals.builds}</div>
         </div>
         <div className="stat">
-          <div className="k">Videos built</div>
+          <div className="k">Rendered</div>
           <div className="v">
             {totals.videos} <small>/ {totals.builds}</small>
           </div>
@@ -60,68 +55,64 @@ export default function Home() {
         </div>
       </section>
 
-      <p className="section-label">Builds</p>
-      <div className="cards">
-        {builds.map((b) => {
-          const pct = Math.round((b.progress.done / b.progress.total) * 100);
-          return (
-            <Link href={`/build/${b.id}`} key={b.id} className="card">
-              <div className="card-top">
-                <div>
-                  <h3>{b.title}</h3>
-                  {b.theme && <div className="theme">{b.theme}</div>}
-                </div>
-                <span className={`badge ${b.status}`}>
-                  <span className="dot" />
-                  {statusLabel[b.status]}
-                </span>
-              </div>
-
-              <div className="card-meta">
-                <span>
-                  <b>{b.scene_count}</b> scenes
-                </span>
-                <span>
-                  <b>{b.word_count.toLocaleString()}</b> words
-                </span>
-                {b.video.duration_seconds ? (
-                  <span>
-                    <b>{Math.round(b.video.duration_seconds / 60)}</b> min video
-                  </span>
-                ) : null}
-                <span>
-                  cost <b>{money(b.cost.actual_usd)}</b>{' '}
-                  <span style={{ color: 'var(--faint)' }}>(≈ {money(b.cost.equivalent_usd)} paid)</span>
-                </span>
-                {b.upload.uploaded && b.upload.url ? (
-                  <span>
-                    <b style={{ color: 'var(--green)' }}>▶ uploaded</b>
-                  </span>
-                ) : null}
-              </div>
-
-              <div className="progress">
-                <div className="progress-track">
-                  <div
-                    className={`progress-fill ${b.status === 'complete' ? 'complete' : ''}`}
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-                <div className="progress-labels">
-                  <span>
-                    {b.progress.done} / {b.progress.total} steps
-                  </span>
-                  <span>{pct}%</span>
-                </div>
-              </div>
+      <div className="board-toolbar">
+        <nav className="tabs">
+          <Link href="/" className={`tab ${!brandFilter ? 'on' : ''}`}>All brands</Link>
+          {BRANDS.map((b) => (
+            <Link key={b.key} href={`/?brand=${b.key}`} className={`tab ${brandFilter === b.key ? 'on' : ''}`}>
+              <span>{b.emoji}</span> {b.label}
             </Link>
-          );
-        })}
+          ))}
+        </nav>
+        <Link href="/assets" className="tab asset-link">🧩 Asset Library</Link>
       </div>
 
-      <p className="cost-note" style={{ marginTop: 28 }}>
-        Actual spend is <b>$0</b> — the pipeline runs on free tiers (Gemini free, edge-tts, local FFmpeg). The
-        &ldquo;≈ paid&rdquo; figure estimates what the same work would cost on paid APIs.
+      <div className="board">
+        {columns.map(({ stage, builds: colBuilds }) => (
+          <section className="column" key={stage.key}>
+            <header className="col-head">
+              <span className="col-title">{stage.label}</span>
+              <span className="col-count">{colBuilds.length}</span>
+            </header>
+            <div className="col-body">
+              {colBuilds.length === 0 ? (
+                <div className="col-empty">—</div>
+              ) : (
+                colBuilds.map((b) => {
+                  const pct = b.progress.total ? Math.round((b.progress.done / b.progress.total) * 100) : 0;
+                  const br = brandOf(b);
+                  return (
+                    <Link href={`/build/${b.id}`} key={b.id} className="kcard">
+                      <div className="kcard-brand" title={br.label}>
+                        <span>{br.emoji}</span>
+                        {b.format && <span className="fmt">{b.format}</span>}
+                      </div>
+                      <h3>{b.title}</h3>
+                      <div className="kcard-meta">
+                        {b.scene_count ? <span>{b.scene_count} scenes</span> : null}
+                        {b.video.duration_seconds ? <span>{Math.round(b.video.duration_seconds)}s</span> : null}
+                        <span>{money(b.cost.actual_usd)}</span>
+                      </div>
+                      <div className="kbar">
+                        <div className={`kbar-fill ${b.status === 'complete' ? 'complete' : ''}`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="kcard-foot">
+                        <span>{b.progress.done}/{b.progress.total}</span>
+                        {b.upload.uploaded ? <span className="up">▶ live</span> : <span className="date">{b.date.slice(5)}</span>}
+                      </div>
+                    </Link>
+                  );
+                })
+              )}
+            </div>
+          </section>
+        ))}
+      </div>
+
+      <p className="cost-note" style={{ marginTop: 24 }}>
+        Cards flow left → right through the pipeline; each sits in the stage currently being worked.
+        Actual spend is <b>$0</b> on the free-tier text pipeline — the Veo video stage (ASMR brand) is
+        the first paid step and is billed per second of generated video.
       </p>
     </main>
   );

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-12T09:23:49.141Z",
+  "generated_at": "2026-07-18T12:13:12.009Z",
   "pricing": {
     "gemini_text_in_per_1m": 0.3,
     "gemini_text_out_per_1m": 2.5,
@@ -8,12 +8,12 @@
     "_note": "Actual pipeline cost is $0 (Gemini free tier, edge-tts, local FFmpeg). equivalent_usd = estimated cost on paid APIs, for reference only."
   },
   "totals": {
-    "builds": 5,
+    "builds": 6,
     "uploaded": 4,
     "videos": 4,
     "total_minutes": 34.2,
     "actual_usd": 0,
-    "equivalent_usd": 6.1295
+    "equivalent_usd": 6.1378
   },
   "builds": [
     {
@@ -387,11 +387,158 @@
       }
     },
     {
+      "id": "2026-07-10_the-whispering-woods-mystery-and-the-shaggy-giant",
+      "title": "The Whispering Woods Mystery and the Shaggy Giant",
+      "date": "2026-07-10",
+      "theme": "helping someone who seems scary but is actually kind",
+      "moral": "When we look past what frightens us and offer kindness, we might find the best friends in the most unexpected places.",
+      "brand": "boopaloo",
+      "format": "long",
+      "status": "in_progress",
+      "progress": {
+        "done": 2,
+        "total": 12
+      },
+      "scene_count": 0,
+      "word_count": 1658,
+      "video": {
+        "has_final": false,
+        "size_mb": null,
+        "resolution": null,
+        "duration_seconds": null,
+        "source": "stills slideshow"
+      },
+      "upload": {
+        "uploaded": false,
+        "url": null,
+        "video_id": null,
+        "privacy": null
+      },
+      "meta": {
+        "text_model": "gemini-2.5-flash",
+        "voice": null,
+        "tts_engine": null
+      },
+      "steps": [
+        {
+          "key": "story",
+          "module": "04",
+          "label": "Story",
+          "engine": "Gemini 2.5 Flash",
+          "status": "done",
+          "detail": "1658 words"
+        },
+        {
+          "key": "characters",
+          "module": "06",
+          "label": "Character Memory",
+          "engine": "Gemini 2.5 Flash",
+          "status": "done",
+          "detail": "Finn, Squeak, Grizelda"
+        },
+        {
+          "key": "scenes",
+          "module": "05",
+          "label": "Scene Breakdown",
+          "engine": "Gemini 2.5 Flash",
+          "status": "pending",
+          "detail": ""
+        },
+        {
+          "key": "prompts",
+          "module": "10a",
+          "label": "Cinematic Prompts",
+          "engine": "Gemini 2.5 Flash",
+          "status": "pending",
+          "detail": ""
+        },
+        {
+          "key": "images",
+          "module": "07",
+          "label": "Scene Images",
+          "engine": "Gemini Image",
+          "status": "pending",
+          "detail": "0"
+        },
+        {
+          "key": "narration",
+          "module": "08",
+          "label": "Narration (TTS)",
+          "engine": "edge-tts",
+          "status": "pending",
+          "detail": ""
+        },
+        {
+          "key": "subtitles",
+          "module": "09",
+          "label": "Subtitles",
+          "engine": "local",
+          "status": "pending",
+          "detail": ""
+        },
+        {
+          "key": "slideshow",
+          "module": "10",
+          "label": "Slideshow (Ken Burns)",
+          "engine": "FFmpeg",
+          "status": "pending",
+          "detail": ""
+        },
+        {
+          "key": "assemble",
+          "module": "10b",
+          "label": "Assemble Video",
+          "engine": "FFmpeg",
+          "status": "pending",
+          "detail": ""
+        },
+        {
+          "key": "thumbnail",
+          "module": "11",
+          "label": "Thumbnail",
+          "engine": "Gemini Image",
+          "status": "pending",
+          "detail": ""
+        },
+        {
+          "key": "seo",
+          "module": "12",
+          "label": "SEO Metadata",
+          "engine": "Gemini 2.5 Flash",
+          "status": "pending",
+          "detail": ""
+        },
+        {
+          "key": "upload",
+          "module": "13",
+          "label": "YouTube Upload",
+          "engine": "YouTube API",
+          "status": "pending",
+          "detail": ""
+        }
+      ],
+      "cost": {
+        "actual_usd": 0,
+        "equivalent_usd": 0.0083,
+        "breakdown": [
+          {
+            "step": "story",
+            "label": "Story generation",
+            "actual_usd": 0,
+            "equivalent_usd": 0.0083,
+            "detail": "~2441 output tokens"
+          }
+        ]
+      }
+    },
+    {
       "id": "2026-07-09_the-mystery-of-the-missing-sparkle",
       "title": "The Mystery of the Missing Sparkle!",
       "date": "2026-07-09",
       "theme": "a little hero saving the day with kindness instead of strength",
       "moral": "Even the smallest act of kindness can brighten the darkest problem and help others find their way.",
+      "brand": "boopaloo",
+      "format": "long",
       "status": "complete",
       "progress": {
         "done": 11,
@@ -577,6 +724,8 @@
       "date": "2026-07-08",
       "theme": "A little hero saving the day with kindness instead of strength",
       "moral": "",
+      "brand": "boopaloo",
+      "format": "long",
       "status": "pending",
       "progress": {
         "done": 0,
@@ -712,6 +861,8 @@
       "date": "2026-07-08",
       "theme": "an unlikely friendship between two very different animals",
       "moral": "When we slow down and work together, we can see the beauty in our differences and achieve sweet things.",
+      "brand": "boopaloo",
+      "format": "long",
       "status": "complete",
       "progress": {
         "done": 12,

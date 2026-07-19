@@ -25,6 +25,10 @@ export interface Build {
   theme: string;
   moral: string;
   status: BuildStatus;
+  /** 'asmr_papercut' | 'boopaloo' (rhyme long-form). Optional for older records. */
+  brand?: string;
+  /** 'short' | 'long'. Optional for older records. */
+  format?: string;
   progress: { done: number; total: number };
   scene_count: number;
   word_count: number;
@@ -52,6 +56,25 @@ export interface RunStatus {
   story_id: string | null;
   video_url: string | null;
   run_url: string | null;
+}
+
+export interface BrandInfo {
+  key: string;
+  label: string;
+  emoji: string;
+}
+
+export interface AssetCard {
+  slug: string;
+  name: string;
+  kind: 'character' | 'prop';
+  visual_description: string;
+  asset_status: 'missing' | 'ready';
+  asset_path: string | null;
+  /** Web-servable copy under dashboard/public, if collected. */
+  public_path?: string | null;
+  brands: string[];
+  times_seen: number;
 }
 
 export interface BuildsFile {

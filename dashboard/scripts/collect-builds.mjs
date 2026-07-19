@@ -103,6 +103,8 @@ const builds = ids.map((id) => {
     date: story.date || id.slice(0, 10),
     theme: story.theme || logRow.theme || '',
     moral: story.moral || '',
+    brand: 'boopaloo',
+    format: 'long',
     status,
     progress: { done: doneCount, total: steps.length },
     scene_count: sceneCount,
@@ -130,14 +132,104 @@ const builds = ids.map((id) => {
   };
 });
 
+// --- ASMR Papercut shorts (brand A) ------------------------------------------
+// Scans output/asmr/** and produces board entries with ASMR-specific step keys.
+// Returns [] until the ASMR pipeline has run, so this is safe on the current data.
+const VEO_FAST_PER_SEC = 0.15; // rough Veo Fast estimate (USD / sec of generated video)
+const dirCount = (dir, re) => { try { return fs.readdirSync(dir).filter((f) => re.test(f)).length; } catch { return 0; } };
+
+function collectAsmr() {
+  const ideasDir = path.join(OUT, 'asmr', 'ideas');
+  let aIds = [];
+  try { aIds = fs.readdirSync(ideasDir).filter((f) => f.endsWith('.json') && f !== 'used.json').map((f) => f.replace(/\.json$/, '')); } catch { return []; }
+
+  return aIds.map((id) => {
+    const concept = readJSON(path.join(ideasDir, id + '.json')) || {};
+    const scenes = readJSON(path.join(OUT, 'asmr', 'scenes', id + '.json'));
+    const prompts = readJSON(path.join(OUT, 'asmr', 'veo', id + '_prompts.json'));
+    const meta = readJSON(path.join(OUT, 'asmr', 'meta', id + '.json'));
+    const upload = uploads[id] || { uploaded: false };
+
+    const sceneCount = (scenes && (scenes.scenes ? scenes.scenes.length : 0)) || 0;
+    const clipCount = dirCount(path.join(OUT, 'asmr', 'clips', id), /\.mp4$/);
+    const frameCount = dirCount(path.join(OUT, 'asmr', 'frames', id), /\.png$/);
+    const hasAudio = exists(path.join(OUT, 'asmr', 'audio', id + '.wav'));
+    const videoPath = path.join(OUT, 'asmr', 'videos', id + '.mp4');
+    const hasVideo = exists(videoPath);
+    const hasThumb = exists(path.join(OUT, 'asmr', 'thumbnails', id + '.jpg'));
+
+    const assetsReady = Array.isArray(concept.props || concept.characters)
+      ? [...(concept.characters || []), ...(concept.props || [])].every((a) => a && a.asset_status === 'ready')
+      : false;
+
+    const steps = [];
+    const st = (key, mod, label, engine, status, detail) => steps.push({ key, module: mod, label, engine, status, detail: detail || '' });
+    st('idea', 'A01', 'Concept', 'Gemini 2.5 Flash', concept.title ? 'done' : 'pending', concept.subject || '');
+    st('assets', 'A02/03', 'Assets', 'Nano Banana', frameCount || assetsReady ? 'done' : 'pending', '');
+    st('storyboard', 'A04', 'Storyboard', 'Gemini 2.5 Flash', scenes ? 'done' : 'pending', sceneCount ? sceneCount + ' scenes' : '');
+    st('veo_prompts', 'A05', 'Veo Prompts', 'Gemini 2.5 Flash', prompts ? 'done' : 'pending', '');
+    st('clips', 'A06', 'Veo Clips', 'Veo', clipCount ? (sceneCount && clipCount >= sceneCount ? 'done' : 'partial') : 'pending', sceneCount ? clipCount + '/' + sceneCount : String(clipCount));
+    st('audio', 'A07', 'ASMR Audio', 'SFX', hasAudio ? 'done' : 'pending', '');
+    st('assemble', 'A09', 'Assemble', 'FFmpeg', hasVideo ? 'done' : 'pending', hasVideo ? sizeMB(videoPath) + ' MB' : '');
+    st('thumbnail', 'A10', 'Thumbnail', 'Nano Banana', hasThumb ? 'done' : 'pending', '');
+    st('seo', 'A11', 'SEO', 'Gemini 2.5 Flash', meta ? 'done' : 'pending', '');
+    st('upload', 'A12', 'Upload', 'YouTube API', upload.uploaded ? 'done' : 'pending', upload.uploaded ? upload.privacy : '');
+
+    const doneCount = steps.filter((s) => s.status === 'done').length;
+    const duration = sceneCount * 8;
+    const actual = usd(clipCount * 8 * VEO_FAST_PER_SEC + frameCount * PRICING.gemini_image_each);
+    const status = upload.uploaded ? 'complete' : doneCount > 0 ? 'in_progress' : 'pending';
+
+    return {
+      id,
+      title: concept.title || id,
+      date: concept.date || id.slice(0, 10),
+      theme: concept.subject || '',
+      moral: '',
+      brand: 'asmr_papercut',
+      format: 'short',
+      status,
+      progress: { done: doneCount, total: steps.length },
+      scene_count: sceneCount,
+      word_count: 0,
+      video: { has_final: hasVideo, size_mb: hasVideo ? sizeMB(videoPath) : null, resolution: hasVideo ? '1080×1920' : null, duration_seconds: hasVideo ? duration : null, source: 'veo clips' },
+      upload: { uploaded: !!upload.uploaded, url: upload.url || null, video_id: upload.video_id || null, privacy: upload.privacy || null },
+      meta: { text_model: 'gemini-2.5-flash', voice: null, tts_engine: null },
+      steps,
+      cost: { actual_usd: actual, equivalent_usd: actual, breakdown: [] },
+    };
+  });
+}
+
+const asmrBuilds = collectAsmr();
+const allBuilds = [...builds, ...asmrBuilds];
+
+// --- Asset Library → data/assets.json (for the /assets gallery) ---------------
+try {
+  const reg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), '..', 'prompts', 'asset-registry.json'), 'utf8'));
+  const flat = [];
+  for (const kind of ['characters', 'props']) {
+    for (const [slug, e] of Object.entries(reg[kind] || {})) {
+      flat.push({
+        slug, name: e.name || slug, kind: kind === 'characters' ? 'character' : 'prop',
+        visual_description: e.visual_description || '', asset_status: e.asset_status || 'missing',
+        asset_path: e.asset_path || null, public_path: null,
+        brands: e.brands || [], times_seen: e.times_seen || 0,
+      });
+    }
+  }
+  fs.writeFileSync(path.join(DATA_DIR, 'assets.json'), JSON.stringify({ generated_at: new Date().toISOString(), assets: flat }, null, 2));
+  console.log(`Wrote data/assets.json: ${flat.length} assets`);
+} catch (e) { console.warn('assets.json skipped:', e.message); }
+
 // Merge with previously-committed builds so history survives ephemeral cloud runs:
 // a GitHub runner only has the CURRENT story's files in output/, so we upsert the
 // freshly-computed entries onto whatever builds.json already holds.
-let merged = builds;
+let merged = allBuilds;
 try {
   const existing = JSON.parse(fs.readFileSync(path.join(DATA_DIR, 'builds.json'), 'utf8'));
   const byId = new Map((existing.builds || []).map((b) => [b.id, b]));
-  for (const b of builds) byId.set(b.id, b);
+  for (const b of allBuilds) byId.set(b.id, b);
   merged = [...byId.values()];
 } catch {}
 merged.sort((a, b) => (b.date > a.date ? 1 : b.date < a.date ? -1 : 0));
